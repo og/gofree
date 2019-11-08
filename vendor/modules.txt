@@ -1,17 +1,31 @@
-# github.com/davecgh/go-spew v1.1.0
+# github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
+github.com/andreyvit/diff
+# github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/go-sql-driver/mysql v1.4.0
+# github.com/go-sql-driver/mysql v1.4.1
 github.com/go-sql-driver/mysql
+# github.com/google/uuid v1.1.1
+github.com/google/uuid
 # github.com/jmoiron/sqlx v1.2.0
 github.com/jmoiron/sqlx
 github.com/jmoiron/sqlx/reflectx
+# github.com/og/go-json v0.0.0-20190910100036-3eb9c488b296
+github.com/og/go-json
 # github.com/og/x v0.0.0-20191010135317-245aa5f2dfe7
 github.com/og/x/dict
 github.com/og/x/error
+github.com/og/x/list
+github.com/og/x/log
+github.com/og/x/map
+github.com/og/x/time
+# github.com/og/x/json v0.0.0-20190911074324-46c1b3e856fb
+github.com/og/x/json
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
+# github.com/sergi/go-diff v1.0.0
+github.com/sergi/go-diff/diffmatchpatch
 # github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
 # google.golang.org/appengine v1.6.5
