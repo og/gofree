@@ -2,6 +2,7 @@ package f
 
 import (
 	"fmt"
+	"github.com/andreyvit/diff"
 	gjson "github.com/og/go-json"
 	ge "github.com/og/x/error"
 	glist "github.com/og/x/list"
@@ -36,6 +37,7 @@ type QB struct {
 	Update Map
 	Count bool
 	Debug bool
+	Check string
 }
 
 
@@ -233,6 +235,9 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 		"sql": sql,
 		"values": gjson.String(sqlValues),
 	})
+	if qb.Check != "" && qb.Check != sql {
+		panic("sql check fail:# diff:\r\n" + diff.CharacterDiff(sql, qb.Check) + "\r\n# actual\r\n" + sql + "\r\n# expect:\r\n" + qb.Check)
+	}
 	return
 }
 

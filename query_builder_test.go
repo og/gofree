@@ -22,6 +22,17 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
+			Select: []string{"name"},
+			Where: []f.AND{
+				{"name": {f.Eql("nimo")}},
+			},
+			Check: "SELECT `name` FROM `user` WHERE `name` = ?",
+		}
+		_, _ = qb.GetSelect()
+	}
+	{
+		qb := f.QB{
+			Table: "user",
 			Select: []string{"name", "age"},
 			Where: []f.AND{
 				{"name": {f.Eql("nimo")}},
