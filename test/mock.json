@@ -1,0 +1,17 @@
+{
+  "local": {
+
+  },
+  "table" :  {
+    "mock": [
+      {
+        "id": 1,
+        "name": "nimo"
+      },
+      {
+        "id": 2,
+        "name": "nico"
+      }
+    ]
+  }
+}

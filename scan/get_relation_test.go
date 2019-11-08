@@ -9,22 +9,22 @@ import (
 )
 
 type User struct {
-	ID int64 `db:"id"`
-	Name []byte `db:"name"`
-	IsSuper int64 `db:"is_super"`
+	ID int `db:"id"`
+	Name string `db:"name"`
+	IsSuper bool `db:"is_super"`
 }
 func (self User) TableName() string { return "user"}
 type Book struct {
-	ID int64 `db:"id"`
-	Name []byte `db:"name"`
-	Price []uint8 `db:"price"`
-	UserID int64 `db:"user_id"`
+	ID int `db:"id"`
+	Name string `db:"name"`
+	Price float64 `db:"price"`
+	UserID int `db:"user_id"`
 	LastReadTime time.Time `db:"last_read_time"`
 }
 func (self Book) TableName() string { return "book"}
 type UserAndBook struct {
-	User User
-	BookList []Book
+	User User `db:"user"`
+	BookList []Book `db:"user"`
 }
 
 func TestGetRelation(t *testing.T) {

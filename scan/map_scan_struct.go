@@ -1,42 +1,44 @@
 package scan
 
 import (
-	"github.com/pkg/errors"
 	"reflect"
 )
 
 type Scan struct {
-	StructValuePtr reflect.Value
+	ValuePtr reflect.Value
 }
 func New(valuePtr interface{}) Scan {
-	structValuePtr := reflect.ValueOf(valuePtr)
 	return Scan{
-		StructValuePtr: structValuePtr,
+		ValuePtr: reflect.ValueOf(valuePtr),
 	}
 }
+func (scan *Scan) MapScanSlice(data map[string]interface{}, relationData Relation) {
 
-func (scan *Scan) MapScanStruct(data map[string]interface{}, relationData Relation, structPtr interface{}) {
+}
+func (scan *Scan) MapScanStruct(data map[string]interface{}, relationData Relation) {
 	for _,relation := range relationData.Single {
 		for structFieldIndex, dbFieldName := range relation.DBTag {
 			dataKey := relation.TableName + "." + dbFieldName
 			dbValue, has := data[dataKey]
 			if !has {
-				panic(errors.WithStack(errors.New(dataKey + "is not found")))
+			} else {
+				scan.ValuePtr.Elem().Field(relation.FieldIndex).Field(structFieldIndex).Set(reflect.ValueOf(dbValue))
 			}
-			scan.StructValuePtr.Elem().Field(relation.FieldIndex).Field(structFieldIndex).Set(reflect.ValueOf(dbValue))
+
 		}
 	}
 	for _,relation := range relationData.Many {
-		newManyItem := reflect.MakeSlice(scan.StructValuePtr.Elem().Field(relation.FieldIndex).Type(), 1,1).Index(0)
+		newManyItem := reflect.MakeSlice(scan.ValuePtr.Elem().Field(relation.FieldIndex).Type(), 1,1).Index(0)
 		for structFieldIndex, dbFieldName := range relation.DBTag {
 			dataKey := relation.TableName + "." + dbFieldName
 			dbValue, has := data[dataKey]
 			if !has {
-				panic(errors.WithStack(errors.New(dataKey + "is not found")))
+			} else {
+				newManyItem.Field(structFieldIndex).Set(reflect.ValueOf(dbValue))
 			}
-			newManyItem.Field(structFieldIndex).Set(reflect.ValueOf(dbValue))
+
 		}
-		scan.StructValuePtr.Elem().Field(relation.FieldIndex).Set(reflect.Append(scan.StructValuePtr.Elem().Field(relation.FieldIndex), newManyItem))
+		scan.ValuePtr.Elem().Field(relation.FieldIndex).Set(reflect.Append(scan.ValuePtr.Elem().Field(relation.FieldIndex), newManyItem))
 	}
 
 }
