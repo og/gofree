@@ -2,8 +2,11 @@ package f_test
 
 import (
 	f "github.com/og/gofree"
+	ge "github.com/og/x/error"
+	gtime "github.com/og/x/time"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestQB_Sql(t *testing.T) {
@@ -184,12 +187,12 @@ func TestQB_Sql(t *testing.T) {
 					"age", f.Lt(18),
 					"age", f.Gt(19),
 				),
-				f.And("created_at", f.Day("2018-11-11")),
+				f.And("created_at", f.Day(ge.GetTime(time.Parse(gtime.Second, "2018-11-11 00:11:11")))),
 			) ,
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE ( `city` = ? ) OR ( `age` < ? AND `age` > ? AND `name` = ? ) OR ( DATE(created_at) = ? )", sqlS)
-		assert.Equal(t, []interface{}{"shanghai", 18, 19, "nimo", "2018-11-11"}, values)
+		assert.Equal(t, "SELECT * FROM `user` WHERE ( `city` = ? ) OR ( `age` < ? AND `age` > ? AND `name` = ? ) OR ( created_at >= ? AND created_at <= ? )", sqlS)
+		assert.Equal(t, []interface{}{"shanghai", 18, 19, "nimo",  "2018-11-11 00:00:00", "2018-11-11 23:59:59"}, values)
 	}
 	{
 		qb := f.QB{
@@ -351,44 +354,14 @@ func TestQB_Sql(t *testing.T) {
 			Where: []f.AND{
 				{
 					"time": f.OP{
-						f.Day("2019-11-11"),
+						f.Day(ge.GetTime(time.Parse(gtime.Second, "2018-11-11 00:11:11"))),
 					},
 				},
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE DATE(time) = ?", sqlS)
-		assert.Equal(t, []interface {}{"2019-11-11"}, values)
-	}
-	{
-		qb := f.QB{
-			Table: "user",
-			Where: []f.AND{
-				{
-					"time": f.OP{
-						f.Month("2019-11"),
-					},
-				},
-			},
-		}
-		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE DATE_FORMAT(time,'%Y%m') = ?", sqlS)
-		assert.Equal(t, []interface {}{"2019-11"}, values)
-	}
-	{
-		qb := f.QB{
-			Table: "user",
-			Where: []f.AND{
-				{
-					"time": f.OP{
-						f.Year("2019"),
-					},
-				},
-			},
-		}
-		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE DATE_FORMAT(time,'%Y') = ?", sqlS)
-		assert.Equal(t, []interface {}{"2019"}, values)
+		assert.Equal(t, "SELECT * FROM `user` WHERE time >= ? AND time <= ?", sqlS)
+		assert.Equal(t, []interface {}{"2018-11-11 00:00:00", "2018-11-11 23:59:59"}, values)
 	}
 	{
 		qb := f.QB{
@@ -514,6 +487,32 @@ func TestQB_Sql(t *testing.T) {
 		sql, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL ORDER BY `name` ASC", sql)
 		assert.Equal(t, []interface {}(nil), values)
+	}
+	{
+		qb := f.QB{
+			Table: "user",
+			Order: f.Map{
+				"name" : f.ASC,
+			},
+			SoftDelete: "deleted_at",
+			Limit: 1,
+		}
+		sql, values := qb.GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL ORDER BY `name` ASC LIMIT ?", sql)
+		assert.Equal(t, []interface {}{1}, values)
+	}
+	{
+		qb := f.QB{
+			Table: "user",
+			Order: f.Map{
+				"name" : f.ASC,
+			},
+			SoftDelete: "deleted_at",
+			Offset: 1,
+		}
+		sql, values := qb.GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL ORDER BY `name` ASC OFFSET ?", sql)
+		assert.Equal(t, []interface {}{1}, values)
 	}
 	{
 		qb := f.QB{

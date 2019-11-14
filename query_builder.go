@@ -13,7 +13,6 @@ import (
 	"os"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -221,13 +220,15 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 	{
 		// limit
 		if qb.Limit != 0 && !qb.Count  {
-			sqlList.Push("LIMIT " + strconv.Itoa(qb.Limit))
+			sqlList.Push("LIMIT ?")
+			sqlValues = append(sqlValues, qb.Limit)
 		}
 	}
 	{
 		// offset
 		if qb.Offset != 0 && !qb.Count {
-			sqlList.Push("OFFSET " + strconv.Itoa(qb.Offset))
+			sqlList.Push("OFFSET ?")
+			sqlValues = append(sqlValues, qb.Offset)
 		}
 	}
 	sql = sqlList.Join(" ")
@@ -259,9 +260,11 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 			fieldSymbolCondition.Push("?")
 			*sqlValues = append(*sqlValues, filter.Value)
 		case "day":
-			fieldSymbolCondition.Push(filter.FieldWrap+"("+field+")", "=")
-			fieldSymbolCondition.Push("?")
-			*sqlValues = append(*sqlValues, filter.Value)
+			fieldSymbolCondition.Push(field + " >= ?")
+			*sqlValues = append(*sqlValues, filter.TimeValue.Format(gtime.Day) + " 00:00:00")
+			fieldSymbolCondition.Push("AND")
+			fieldSymbolCondition.Push(field + " <= ?")
+			*sqlValues = append(*sqlValues, filter.TimeValue.Format(gtime.Day) + " 23:59:59")
 		case "NOT":
 			fieldSymbolCondition.Push(wrapField(field), "!=")
 			fieldSymbolCondition.Push("?")

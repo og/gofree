@@ -1,25 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="c194850c-eac4-4295-8400-ab176f803a1a" name="Default Changelist" comment="">
+    <list default="true" id="c194850c-eac4-4295-8400-ab176f803a1a" name="Default Changelist" comment="`l`">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/operator.go" beforeDir="false" afterPath="$PROJECT_DIR$/operator.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/query_builder.go" beforeDir="false" afterPath="$PROJECT_DIR$/query_builder.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/query_builder_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/query_builder_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/LICENSE" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/LICENSE" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/spew/bypass.go" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/spew/bypass.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/spew/bypasssafe.go" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/spew/bypasssafe.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/spew/common.go" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/spew/common.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/spew/dump.go" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/spew/dump.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/spew/format.go" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/davecgh/go-spew/spew/format.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/CHANGELOG.md" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/CHANGELOG.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/auth.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/connection_go18.go" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/connection_go18.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/driver.go" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/driver.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/packets.go" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/packets.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/utils.go" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/github.com/go-sql-driver/mysql/utils.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vendor/modules.txt" beforeDir="false" afterPath="$PROJECT_DIR$/vendor/modules.txt" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -28,7 +14,38 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="FileEditorManager">
-    <leaf SIDE_TABS_SIZE_LIMIT_KEY="300" />
+    <leaf>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/query_builder.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="359">
+              <caret line="264" column="42" selection-start-line="264" selection-start-column="42" selection-end-line="264" selection-end-column="42" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/query_builder_test.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="235">
+              <caret line="378" column="29" lean-forward="true" selection-start-line="378" selection-start-column="29" selection-end-line="378" selection-end-column="29" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/operator.go">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="176">
+              <caret line="8" column="20" lean-forward="true" selection-start-line="8" selection-start-column="20" selection-end-line="8" selection-end-column="20" />
+              <folding>
+                <element signature="e#11#29#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
   </component>
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
@@ -51,6 +68,10 @@
       <find>logDebug</find>
       <find>GetSelect</find>
       <find>qb.Check</find>
+      <find>litmit</find>
+      <find>limit</find>
+      <find>Day</find>
+      <find>day\\</find>
     </findStrings>
     <dirStrings>
       <dir>$PROJECT_DIR$</dir>
@@ -77,6 +98,7 @@
         <option value="$PROJECT_DIR$/reset_mock_data.go" />
         <option value="$PROJECT_DIR$/reset_mock_data_test.go" />
         <option value="$PROJECT_DIR$/db_test.go" />
+        <option value="$PROJECT_DIR$/operator.go" />
         <option value="$PROJECT_DIR$/query_builder.go" />
         <option value="$PROJECT_DIR$/query_builder_test.go" />
       </list>
@@ -94,7 +116,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -115,6 +136,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -210,34 +232,34 @@
     </recent_temporary>
   </component>
   <component name="TestHistory">
-    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.08 at 15h 59m 09s.xml">
+    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.14 at 15h 45m 18s.xml">
       <configuration name="TestQB_Sql in github.com/og/gofree" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.08 at 15h 59m 14s.xml">
+    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.14 at 15h 45m 56s.xml">
       <configuration name="TestQB_Sql in github.com/og/gofree" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.08 at 15h 59m 50s.xml">
+    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.14 at 15h 46m 21s.xml">
       <configuration name="TestQB_Sql in github.com/og/gofree" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.08 at 15h 59m 54s.xml">
+    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.14 at 15h 46m 24s.xml">
       <configuration name="TestQB_Sql in github.com/og/gofree" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.08 at 16h 00m 04s.xml">
+    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.14 at 15h 55m 44s.xml">
       <configuration name="TestQB_Sql in github.com/og/gofree" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.08 at 16h 00m 24s.xml">
+    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.14 at 15h 56m 08s.xml">
       <configuration name="TestQB_Sql in github.com/og/gofree" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.08 at 16h 00m 43s.xml">
+    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.14 at 15h 56m 46s.xml">
       <configuration name="TestQB_Sql in github.com/og/gofree" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.08 at 16h 00m 46s.xml">
+    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.14 at 15h 57m 08s.xml">
       <configuration name="TestQB_Sql in github.com/og/gofree" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.08 at 16h 00m 52s.xml">
+    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.14 at 15h 57m 23s.xml">
       <configuration name="TestQB_Sql in github.com/og/gofree" configurationId="GoTestRunConfiguration" />
     </history-entry>
-    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.08 at 16h 00m 54s.xml">
+    <history-entry file="TestQB_Sql_in_github_com_og_gofree - 2019.11.14 at 15h 57m 28s.xml">
       <configuration name="TestQB_Sql in github.com/og/gofree" configurationId="GoTestRunConfiguration" />
     </history-entry>
   </component>
@@ -252,8 +274,9 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1920" height="971" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.27635783" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.27902022" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -478,20 +501,27 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/query_builder_test.go">
+    <entry file="file://$PROJECT_DIR$/query_builder.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="187">
-          <caret line="27" column="14" lean-forward="true" selection-start-line="27" selection-start-column="14" selection-end-line="27" selection-end-column="14" />
+        <state relative-caret-position="359">
+          <caret line="264" column="42" selection-start-line="264" selection-start-column="42" selection-end-line="264" selection-end-column="42" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/query_builder.go">
+    <entry file="file://$PROJECT_DIR$/operator.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="361">
-          <caret line="238" column="139" lean-forward="true" selection-start-line="238" selection-start-column="139" selection-end-line="238" selection-end-column="139" />
+        <state relative-caret-position="176">
+          <caret line="8" column="20" lean-forward="true" selection-start-line="8" selection-start-column="20" selection-end-line="8" selection-end-column="20" />
           <folding>
-            <element signature="e#11#318#0" expanded="true" />
+            <element signature="e#11#29#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/query_builder_test.go">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="235">
+          <caret line="378" column="29" lean-forward="true" selection-start-line="378" selection-start-column="29" selection-end-line="378" selection-end-column="29" />
         </state>
       </provider>
     </entry>

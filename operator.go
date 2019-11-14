@@ -1,6 +1,7 @@
 package f
 
 import (
+	"time"
 )
 
 type OP []Filter
@@ -12,6 +13,7 @@ type Filter struct {
 	Like string
 	Custom string
 	CustomSQL string
+	TimeValue time.Time
 }
 func Eql(v interface{}) Filter {
 	return Filter{
@@ -110,27 +112,10 @@ func IsNotNull () Filter {
 		Symbol: "IS NOT NULL",
 	}
 }
-func Day(v string) Filter{
+func Day(v time.Time) Filter{
 	return Filter{
-		FieldWrap: "DATE",
 		Symbol: "day",
-		Value: v,
-	}
-}
-func Month(v string) Filter {
-	return Filter{
-		FieldWrap: "DATE_FORMAT",
-		FieldWarpArg: "%Y%m",
-		Symbol: "month",
-		Value: v,
-	}
-}
-func Year(v string) Filter {
-	return Filter{
-		FieldWrap: "DATE_FORMAT",
-		FieldWarpArg: "%Y",
-		Symbol: "year",
-		Value: v,
+		TimeValue: v,
 	}
 }
 const DESC = "DESC"
