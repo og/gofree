@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>gofree create field</title>
+    <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+</head>
+<body>
+<div id="app">
+    <h1>gofree: translate model field const from model struct</h1>
+    <el-row :gutter="20">
+        <el-col :span="11">
+            <el-input
+                    type="textarea"
+                    :autosize="{ minRows: 2, maxRows: 100}"
+                    placeholder="input model struct"
+                    v-model="form.modelStructInput">
+            </el-input>
+        </el-col>
+        <el-col :span="2" style="text-align:center;">
+            <a class="github-button" href="https://github.com/og/gofree" data-color-scheme="no-preference: light; light: light; dark: dark;" data-size="large" data-show-count="true" aria-label="Star og/gofree on GitHub">Star</a>
+            <el-divider></el-divider>
+            <el-button @click="useTemplate" >template</el-button>
+            <el-divider></el-divider>
+            <el-button @click="clearModelStructInput"  type="primary" >clear</el-button>
+            <el-divider></el-divider>
+        </el-col>
+        <el-col :span="11">
+            <el-input
+                    type="textarea"
+                    :autosize="{ minRows: 2, maxRows: 100}"
+                    placeholder="input model struct"
+                    v-model="modelStructInputComputedFieldStruct">
+            </el-input>
+        </el-col>
+    </el-row>
+
+</div>
+<script type="text/template" id="templateText" >
+type UserAction struct {
+    EventID         string `note:"不在数据库中用于分表 TableName 查询"`
+    ID              string       `db:"id";json:"id"`
+    UserID          string    	 `db:"user_id"`
+    Code            string    	 `db:"code"`
+    Type            string    	 `db:"type"`
+    Time            time.Time    `db:"time"`
+    Day             time.Time    `db:"day"`
+    IP              string    	 `db:"ip"`
+    UA              string    	 `db:"ua"`
+    Platform        string    	 `db:"platform"`
+    Browser         string    	 `db:"browser"`
+    DeviceModel     string    	 `db:"device_model"`
+    Province        string    	 `db:"province"`
+    City            string    	 `db:"city"`
+    District        string    	 `db:"district"`
+    Price           float64    	 `db:"price"`
+    ProjectID       string    	 `db:"project_id"`
+    Audit           bool    	 `db:"audit"`
+    Valid           bool    	 `db:"valid"`
+    CodeFirstView   bool    	 `db:"code_first_view"`
+    PackageID       string    	 `db:"package_id"`
+    Referer         string    	 `db:"referer"`
+    DeletedAt       mysql.NullTime    	 `db:"deleted_at"`
+}
+</script>
+<script>
+    new Vue({
+        el: '#app',
+        methods:{
+            useTemplate: function () {
+                this.form.modelStructInput = document.getElementById("templateText").innerHTML.trim()
+            },
+            clearModelStructInput: function () {
+                this.form.modelStructInput = ""
+            }
+        },
+        computed: {
+            modelStructInputComputedFieldStruct: function () {
+                var fieldCode = ""
+                this.form.modelStructInput.replace(/.*?`db:"([^"]+)"/g, function (source, $1) {
+                    var structField = source.trim().split(" ")[0]
+                    fieldCode += "const f" + structField + " = " + '"' + $1 + '"' + "\r\n"
+                })
+                return fieldCode
+            }
+        },
+        data: function() {
+            return {
+                form: {
+                    modelStructInput: document.getElementById("templateText").innerHTML.trim(),
+                }
+            }
+        }
+    })
+</script>
+<!-- Place this tag in your head or just before your close body tag. -->
+<script async defer src="https://buttons.github.io/buttons.js"></script>
+</body>
+</html>
