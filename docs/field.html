@@ -79,9 +79,13 @@ type UserAction struct {
         computed: {
             modelStructInputComputedFieldStruct: function () {
                 var fieldCode = ""
+                var typeName = ""
+                this.form.modelStructInput.replace(/type\s+(.*?)\s/, function (source, $1) {
+                    typeName = $1
+                })
                 this.form.modelStructInput.replace(/.*?`db:"([^"]+)"/g, function (source, $1) {
                     var structField = source.trim().split(" ")[0]
-                    fieldCode += "const f" + structField + " = " + '"' + $1 + '"' + "\r\n"
+                    fieldCode += "const f" + typeName + structField + " = " + '"' + $1 + '"' + "\r\n"
                 })
                 return fieldCode
             }
