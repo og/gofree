@@ -371,10 +371,14 @@ func logDebug(isDebug bool, data Map) {
 		onlyValueLogger.Printf("\t%#+v",value)
 	}
 }
-func (qb *QB) BindModel(model Model) {
+func (qb QB) BindModel(model Model) QB {
 	tableName := model.TableName()
 	qb.Table = tableName
-	if reflect.ValueOf(model).Elem().FieldByName("DeletedAt").IsValid() {
+	if qb.Table == "" {
+		panic(errors.New("tableName is empty string"))
+	}
+	if reflect.ValueOf(model).FieldByName("DeletedAt").IsValid() {
 		qb.SoftDelete = "deleted_at"
 	}
+	return qb
 }

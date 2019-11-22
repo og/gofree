@@ -9,7 +9,9 @@ import (
 	"time"
 )
 
+
 func TestQB_Sql(t *testing.T) {
+
 	{
 		qb := f.QB{
 			Table: "user",
@@ -603,5 +605,12 @@ func TestQB_Sql(t *testing.T) {
 		sql, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE (`created_at` < ? OR `created_at` > ?) AND `created_at` = ? AND `id` IN (?, ?) AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{"2019-11-11", "2019-11-11", "2010-11-11", "1", "2"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And("id", 1),
+		}.BindModel(User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `id` = ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{1}, values)
 	}
 }
