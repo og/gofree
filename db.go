@@ -5,6 +5,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	ge "github.com/og/x/error"
+	l "github.com/og/x/log"
+	"reflect"
 )
 
 type Database struct {
@@ -25,7 +27,7 @@ func NewDatabase(dataSourceName DataSourceName) (database Database) {
 }
 
 func (db *Database) OneQB(modelPtr Model, has *bool, qb QB) {
-	db.coreOneQB(txOrDB{ UseTx: false,}, modelPtr,has, qb)
+	db.coreOneQB(txOrDB{ UseTx: false,}, modelPtr, has, qb)
 	return
 }
 func (db *Database) TxOneQB(tx *sqlx.Tx, modelPtr Model, has *bool, qb QB) {
@@ -40,9 +42,9 @@ func (db *Database) coreOneQB(txDB txOrDB, modelPtr Model, has *bool, qb QB) {
 	query, values := qb.BindModel(modelPtr).GetSelect()
 	var row *sqlx.Row
 	if txDB.UseTx {
-		row = txDB.Tx.QueryRowx(query, values)
+		row = txDB.Tx.QueryRowx(query, values...)
 	} else {
-		row = db.Core.QueryRowx(query, values)
+		row = db.Core.QueryRowx(query, values...)
 	}
 	err := row.StructScan(modelPtr)
 	if err == sql.ErrNoRows { *has = false ; return}
@@ -77,12 +79,53 @@ func (db *Database) coreCountQB(txDB txOrDB, modelPtr Model, qb QB) (count int) 
 	query, values := qb.BindModel(modelPtr).GetSelect()
 	var row *sqlx.Row
 	if txDB.UseTx {
-		row = txDB.Tx.QueryRowx(query, values)
+		row = txDB.Tx.QueryRowx(query, values...)
 	} else {
-		row = db.Core.QueryRowx(query, values)
+		row = db.Core.QueryRowx(query, values...)
 	}
 	err := row.Scan(&count)
 	if err != nil {panic(err)}
 	return
 }
 
+func (db *Database) ListQB(modelListPtr interface{}, qb QB) {
+	db.coreListQB(txOrDB{UseTx: false}, modelListPtr, qb)
+}
+func (db *Database) TxListQB(tx *sqlx.Tx, modelListPtr interface{}, qb QB) {
+	db.coreListQB(txOrDB{UseTx: false, Tx: tx}, modelListPtr, qb)
+}
+func (db *Database) coreListQB(txDB txOrDB, modelListPtr interface{}, qb QB) {
+	reflectItemValue := reflect.MakeSlice(reflect.TypeOf(modelListPtr).Elem(), 1,1).Index(0)
+	model := reflectItemValue.Interface().(Model)
+	query, values := qb.BindModel(model).GetSelect()
+	if qb.Table == "" {
+		tableName := reflectItemValue.MethodByName("TableName").Call([]reflect.Value{})[0].String()
+		qb.Table = tableName
+	}
+	if txDB.UseTx {
+		err := txDB.Tx.Select(modelListPtr, query, values...)
+		ge.Check(err)
+	} else {
+		err := db.Core.Select(modelListPtr, query, values...)
+		ge.Check(err)
+	}
+	return
+}
+
+func (db *Database) Create(modelPtr interface{}) {
+	value := reflect.ValueOf(modelPtr)
+	typeValue := reflect.TypeOf(modelPtr)
+	fieldLen := value.NumField()
+	for i:=0;i<fieldLen;i++{
+		item := value.Field(i)
+		itemType := typeValue.Field(i)
+		l.V(itemType.Name)
+		l.V(itemType.Tag.Get("db"), item.Interface())
+	}
+
+	insertData := Map{}
+	QB{
+		Insert: insertData,
+	}.BindModel(modelPtr.(Model)).GetInsert()
+
+}

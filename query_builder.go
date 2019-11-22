@@ -347,9 +347,7 @@ func parseWhere (Where []AND, WhereList *glist.StringList, sqlValues *[]interfac
 		WhereList.Push(orSqlString)
 	}
 }
-type Model interface {
-	TableName () string
-}
+
 func logSQL(isDebug bool, sql string, values []interface{}) {
 	replaceRegexp, err := regexp.Compile(`"`);ge.Check(err)
 	removeStartEndRegExp, err := regexp.Compile(`(^\[|\]$)`) ; ge.Check(err)
@@ -372,13 +370,14 @@ func logDebug(isDebug bool, data Map) {
 	}
 }
 func (qb QB) BindModel(model Model) QB {
-	tableName := model.TableName()
-	qb.Table = tableName
 	if qb.Table == "" {
-		panic(errors.New("tableName is empty string"))
+		tableName := model.TableName()
+		qb.Table = tableName
+		if qb.Table == "" {
+			panic(errors.New("tableName is empty string"))
+		}
 	}
-	if reflect.ValueOf(model).FieldByName("DeletedAt").IsValid() {
-		qb.SoftDelete = "deleted_at"
-	}
+	qb.SoftDelete = "deleted_at"
 	return qb
 }
+

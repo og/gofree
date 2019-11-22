@@ -6,11 +6,13 @@
     "mock": [
       {
         "id": 1,
-        "name": "nimo"
+        "name": "nimo",
+        "is_super": false
       },
       {
         "id": 2,
-        "name": "nico"
+        "name": "nico",
+        "is_super": true
       }
     ]
   }

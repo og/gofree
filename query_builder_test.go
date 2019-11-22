@@ -609,7 +609,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		sql, values := f.QB{
 			Where: f.And("id", 1),
-		}.BindModel(User{}).GetSelect()
+		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `id` = ? AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{1}, values)
 	}
