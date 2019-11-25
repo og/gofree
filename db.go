@@ -5,6 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	ge "github.com/og/x/error"
+	"github.com/pkg/errors"
 	"reflect"
 	"time"
 )
@@ -111,7 +112,7 @@ func (db *Database) coreListQB(txDB txOrDB, modelListPtr interface{}, qb QB) {
 	return
 }
 
-func (db *Database) Create(modelPtr interface{}) {
+func (db *Database) coreCreate(txDB txOrDB, modelPtr interface{}) {
 	value := reflect.ValueOf(modelPtr).Elem()
 	reflect.ValueOf(modelPtr).MethodByName("BeforeCreate").Call([]reflect.Value{})
 	typeValue := reflect.TypeOf(modelPtr).Elem()
@@ -139,10 +140,127 @@ func (db *Database) Create(modelPtr interface{}) {
 	query, values := QB{
 		Insert: insertData,
 	}.BindModel(modelPtr).GetInsert()
-	result ,err := db.Core.Exec(query, values...) ; ge.Check(err)
+	var result sql.Result
+	if txDB.UseTx {
+		newResult, err := txDB.Tx.Exec(query, values...) ; ge.Check(err)
+		result = newResult
+	} else {
+		newResult, err := db.Core.Exec(query, values...) ; ge.Check(err)
+		result = newResult
+	}
+
 	lastInsertID, err := result.LastInsertId() ; ge.Check(err)
 	if  lastInsertID != 0 {
 		value.FieldByName("ID").SetInt(lastInsertID)
 	}
 
+}
+
+func (db *Database) Create(modelPtr interface{}) {
+	db.coreCreate(txOrDB{}, modelPtr)
+}
+func (db *Database) TxCreate(tx *sqlx.Tx, modelPtr interface{}) {
+	db.coreCreate(txOrDB{UseTx: true, Tx: tx}, modelPtr)
+}
+
+func (db *Database) coreDeleteQB(txDB txOrDB, modelPtr interface{}, qb QB) {
+	if len(qb.Update) == 0 {
+		qb.Update = Map{}
+	}
+	qb.Update["deleted_at"] = time.Now()
+	query, values := qb.BindModel(modelPtr).GetUpdate()
+	var result sql.Result
+	if txDB.UseTx {
+		sqlResult, err := txDB.Tx.Exec(query, values...) ; ge.Check(err)
+		result = sqlResult
+	} else {
+		sqlResult, err := db.Core.Exec(query, values...) ; ge.Check(err)
+		result = sqlResult
+	}
+	_, err := result.LastInsertId() ; ge.Check(err)
+}
+func (db *Database) DeleteQB(modelPtr interface{}, qb QB) {
+	db.coreDeleteQB(txOrDB{}, modelPtr, qb)
+}
+func (db *Database) TxDeleteQB(tx *sqlx.Tx,modelPtr interface{}, qb QB) {
+	db.coreDeleteQB(txOrDB{UseTx: true, Tx: tx}, modelPtr, qb)
+}
+
+
+func (db *Database) coreDelete(txDB txOrDB, modelPtr interface{}) {
+	id := reflect.ValueOf(modelPtr).Elem().FieldByName("ID").Interface()
+	qb := QB{
+		Where: And("id", id),
+	}
+	if len(qb.Update) == 0 {
+		qb.Update = Map{}
+	}
+	qb.Update["deleted_at"] = time.Now()
+	query, values := qb.BindModel(modelPtr).GetUpdate()
+	var result sql.Result
+	if txDB.UseTx {
+		sqlResult, err := txDB.Tx.Exec(query, values...) ; ge.Check(err)
+		result = sqlResult
+	} else {
+		sqlResult, err := db.Core.Exec(query, values...) ; ge.Check(err)
+		result = sqlResult
+	}
+	_, err := result.LastInsertId() ; ge.Check(err)
+}
+func (db *Database) Delete(modelPtr interface{}) {
+	db.coreDelete(txOrDB{}, modelPtr)
+}
+func (db *Database) TxDelete(tx *sqlx.Tx,modelPtr interface{}, qb QB) {
+	db.coreDelete(txOrDB{UseTx: true, Tx: tx}, modelPtr)
+}
+
+func (db *Database) Update(modelPtr interface{}) {
+	db.coreUpdate(txOrDB{}, modelPtr)
+}
+func (db *Database) TxUpdate(tx *sqlx.Tx, modelPtr interface{}) {
+	db.coreUpdate(txOrDB{UseTx: true, Tx: tx}, modelPtr)
+}
+func (db *Database) coreUpdate (txDB txOrDB, modelPtr interface{}) {
+	value := reflect.ValueOf(modelPtr).Elem()
+	reflect.ValueOf(modelPtr).MethodByName("BeforeCreate").Call([]reflect.Value{})
+	typeValue := reflect.TypeOf(modelPtr).Elem()
+	fieldLen := value.NumField()
+	updateData := Map{}
+	var id interface{}
+	for i:=0;i<fieldLen;i++{
+		item := value.Field(i)
+		itemType := typeValue.Field(i)
+		dbName := itemType.Tag.Get("db")
+		value := item.Interface()
+		if dbName == "id" {
+			id = value
+			continue
+		}
+		updateData[dbName] = value
+	}
+	updatedAtValue := value.FieldByName("UpdatedAt")
+	if updatedAtValue.IsValid() {
+		updatedAtType, _ := typeValue.FieldByName("UpdatedAt")
+		updateData[updatedAtType.Tag.Get("db")] = time.Now()
+		updatedAtValue.Set(reflect.ValueOf(time.Now()))
+	}
+	if id == nil {
+		panic(errors.New("db.Update(modelPtr) model.id is nil"))
+	}
+	query, values := QB{
+		Where: And("id", id),
+		Update: updateData,
+	}.BindModel(modelPtr).GetUpdate()
+	var result sql.Result
+	if txDB.UseTx {
+		newResult, err := txDB.Tx.Exec(query, values...) ; ge.Check(err)
+		result = newResult
+	} else {
+		newResult, err := db.Core.Exec(query, values...) ; ge.Check(err)
+		result = newResult
+	}
+	lastInsertID, err := result.LastInsertId() ; ge.Check(err)
+	if  lastInsertID != 0 {
+		value.FieldByName("ID").SetInt(lastInsertID)
+	}
 }

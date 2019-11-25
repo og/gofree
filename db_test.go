@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	_ "database/sql"
 	f "github.com/og/gofree"
+	ge "github.com/og/x/error"
+	gtime "github.com/og/x/time"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -36,7 +38,7 @@ func TestNewDatabase(t *testing.T) {
 	})
 	{
 		count := db.CountQB(&User{}, f.QB{
-			Where: f.And("id", 1),
+			Where: f.And("id", "1"),
 		})
 		assert.Equal(t, count, 1)
 	}
@@ -106,5 +108,62 @@ func TestNewDatabase(t *testing.T) {
 			Name: "nimo",
 		}
 		db.Create(&user)
+	}
+	{
+		user := User{
+			Name: "deletedQB",
+		}
+		db.Create(&user)
+		db.DeleteQB(&user, f.QB{
+			Where: f.And("id", user.ID),
+		})
+		userList := []User{}
+		query, values := f.QB{
+			Table: user.TableName(),
+			Where: f.And("id", user.ID),
+		}.GetSelect()
+		err := db.Core.Select(&userList, query, values...) ; ge.Check(err)
+		assert.Equal(t, len(userList), 1)
+		assert.Equal(t, userList[0].ID, user.ID)
+		assert.Equal(t, userList[0].Name, "deletedQB")
+		assert.Equal(t, userList[0].DeletedAt.Valid, true)
+	}
+	{
+		user := User{
+			Name: "deleted",
+		}
+		db.Create(&user)
+		db.Delete(&user)
+		userList := []User{}
+		query, values := f.QB{
+			Table: user.TableName(),
+			Where: f.And("id", user.ID),
+		}.GetSelect()
+		err := db.Core.Select(&userList, query, values...) ; ge.Check(err)
+		assert.Equal(t, len(userList), 1)
+		assert.Equal(t, userList[0].ID, user.ID)
+		assert.Equal(t, userList[0].Name, "deleted")
+		assert.Equal(t, userList[0].DeletedAt.Valid, true)
+	}
+	{
+		user := User{
+			Name: "update1",
+		}
+		db.Create(&user)
+		assert.Equal(t, len(user.ID), 36)
+		assert.Equal(t, user.Name, "update1")
+		user.Name = "update2"
+		db.Update(&user)
+		assert.Equal(t, user.Name, "update2")
+		userList := []User{}
+		query, values := f.QB{
+			Table: user.TableName(),
+			Where: f.And("id", user.ID),
+		}.GetSelect()
+		err := db.Core.Select(&userList, query, values...) ; ge.Check(err)
+		assert.Equal(t, len(userList), 1)
+		assert.Equal(t, userList[0].ID, user.ID)
+		assert.Equal(t, userList[0].Name, "update2")
+		assert.Equal(t, userList[0].UpdatedAt.Format(gtime.Minute), time.Now().Format(gtime.Minute))
 	}
 }
