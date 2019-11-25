@@ -10,17 +10,20 @@ import (
 )
 
 type User struct {
-	ID int `db:"id"`
+	ID string `db:"id"`
 	Name string `db:"name"`
 	IsSuper bool `db:"is_super"`
 	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
 	DeletedAt sql.NullTime `db:"deleted_at"`
 }
 func (user User) TableName() string {
 	return "user"
 }
 func (user *User) BeforeCreate () {
-
+	if user.ID == "" {
+		user.ID = f.UUID()
+	}
 }
 func TestNewDatabase(t *testing.T) {
 	db := f.NewDatabase(f.DataSourceName{
@@ -39,7 +42,7 @@ func TestNewDatabase(t *testing.T) {
 	}
 	{
 		count := db.CountQB(&User{}, f.QB{
-			Where: f.And("id", 3),
+			Where: f.And("id", -1),
 		})
 		assert.Equal(t, count, 0)
 	}
@@ -50,26 +53,20 @@ func TestNewDatabase(t *testing.T) {
 		db.OneQB(&user, &has, f.QB{
 			Where: f.And("id", 1),
 		})
-		assert.Equal(t, user, User{
-			ID:        1,
-			Name:      "nimo",
-			IsSuper:   false,
-			DeletedAt: sql.NullTime{},
-		})
+		assert.Equal(t, user.ID, "1")
+		assert.Equal(t, user.Name, "nimo")
+		assert.Equal(t, user.IsSuper, false)
 		assert.Equal(t, has, true)
 	}
 	{
 		user := User{}
 		has := false
 		db.OneQB(&user, &has, f.QB{
-			Where: f.And("id", 3),
+			Where: f.And("id", -1),
 		})
-		assert.Equal(t, user, User{
-			ID:        0,
-			Name:      "",
-			IsSuper:   false,
-			DeletedAt: sql.NullTime{},
-		})
+		assert.Equal(t, user.ID, "")
+		assert.Equal(t, user.Name, "")
+		assert.Equal(t, user.IsSuper, false)
 		assert.Equal(t, has, false)
 	}
 
@@ -77,47 +74,37 @@ func TestNewDatabase(t *testing.T) {
 		user := User{}
 		has := false
 		db.OneID(&user, &has, "1")
-		assert.Equal(t, user, User{
-			ID:        1,
-			Name:      "nimo",
-			IsSuper:   false,
-			DeletedAt: sql.NullTime{},
-		})
+		assert.Equal(t, user.ID, "1")
+		assert.Equal(t, user.Name, "nimo")
+		assert.Equal(t, user.IsSuper, false)
 		assert.Equal(t, has, true)
 	}
 	{
 		user := User{}
 		has := false
-		db.OneID(&user, &has, "3")
-		assert.Equal(t, user, User{
-			ID:        0,
-			Name:      "",
-			IsSuper:   false,
-			DeletedAt: sql.NullTime{},
-		})
+		db.OneID(&user, &has, "-1")
+		assert.Equal(t, user.ID, "")
+		assert.Equal(t, user.Name, "")
+		assert.Equal(t, user.IsSuper, false)
 		assert.Equal(t, has, false)
 	}
 	{
 		userList := []User{}
-		db.ListQB(&userList, f.QB{})
-		assert.Equal(t, userList, []User{
-			{
-				ID: 1,
-				Name: "nimo",
-				IsSuper: false,
-				DeletedAt: sql.NullTime{},
-			},
-			{
-				ID: 2,
-				Name: "nico",
-				IsSuper: true,
-				DeletedAt: sql.NullTime{},
-			},
+		db.ListQB(&userList, f.QB{
+			Where: f.And("id", f.In([]string{"1","2"})),
 		})
+		assert.Equal(t, userList[0].ID, "1")
+		assert.Equal(t, userList[0].Name, "nimo")
+		assert.Equal(t, userList[0].IsSuper, false)
+
+		assert.Equal(t, userList[1].ID, "2")
+		assert.Equal(t, userList[1].Name, "nico")
+		assert.Equal(t, userList[1].IsSuper, true)
 	}
 	{
-		db.Create(User{
+		user := User{
 			Name: "nimo",
-		})
+		}
+		db.Create(&user)
 	}
 }

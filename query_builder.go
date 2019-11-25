@@ -369,9 +369,9 @@ func logDebug(isDebug bool, data Map) {
 		onlyValueLogger.Printf("\t%#+v",value)
 	}
 }
-func (qb QB) BindModel(model Model) QB {
+func (qb QB) BindModel(model interface{}) QB {
 	if qb.Table == "" {
-		tableName := model.TableName()
+		tableName := reflect.ValueOf(model).MethodByName("TableName").Call([]reflect.Value{})[0].String()
 		qb.Table = tableName
 		if qb.Table == "" {
 			panic(errors.New("tableName is empty string"))

@@ -5,8 +5,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	ge "github.com/og/x/error"
-	l "github.com/og/x/log"
 	"reflect"
+	"time"
 )
 
 type Database struct {
@@ -96,8 +96,7 @@ func (db *Database) TxListQB(tx *sqlx.Tx, modelListPtr interface{}, qb QB) {
 }
 func (db *Database) coreListQB(txDB txOrDB, modelListPtr interface{}, qb QB) {
 	reflectItemValue := reflect.MakeSlice(reflect.TypeOf(modelListPtr).Elem(), 1,1).Index(0)
-	model := reflectItemValue.Interface().(Model)
-	query, values := qb.BindModel(model).GetSelect()
+	query, values := qb.BindModel(reflectItemValue.Interface()).GetSelect()
 	if qb.Table == "" {
 		tableName := reflectItemValue.MethodByName("TableName").Call([]reflect.Value{})[0].String()
 		qb.Table = tableName
@@ -113,19 +112,37 @@ func (db *Database) coreListQB(txDB txOrDB, modelListPtr interface{}, qb QB) {
 }
 
 func (db *Database) Create(modelPtr interface{}) {
-	value := reflect.ValueOf(modelPtr)
-	typeValue := reflect.TypeOf(modelPtr)
+	value := reflect.ValueOf(modelPtr).Elem()
+	reflect.ValueOf(modelPtr).MethodByName("BeforeCreate").Call([]reflect.Value{})
+	typeValue := reflect.TypeOf(modelPtr).Elem()
 	fieldLen := value.NumField()
+	insertData := Map{}
 	for i:=0;i<fieldLen;i++{
 		item := value.Field(i)
 		itemType := typeValue.Field(i)
-		l.V(itemType.Name)
-		l.V(itemType.Tag.Get("db"), item.Interface())
+		dbName := itemType.Tag.Get("db")
+		value := item.Interface()
+		insertData[dbName] = value
 	}
-
-	insertData := Map{}
-	QB{
+	createdAtValue := value.FieldByName("CreatedAt")
+	if createdAtValue.IsValid() {
+		createdAtType, _ := typeValue.FieldByName("CreatedAt")
+		insertData[createdAtType.Tag.Get("db")] = time.Now()
+		createdAtValue.Set(reflect.ValueOf(time.Now()))
+	}
+	updatedAtValue := value.FieldByName("UpdatedAt")
+	if updatedAtValue.IsValid() {
+		updatedAtType, _ := typeValue.FieldByName("UpdatedAt")
+		insertData[updatedAtType.Tag.Get("db")] = time.Now()
+		updatedAtValue.Set(reflect.ValueOf(time.Now()))
+	}
+	query, values := QB{
 		Insert: insertData,
-	}.BindModel(modelPtr.(Model)).GetInsert()
+	}.BindModel(modelPtr).GetInsert()
+	result ,err := db.Core.Exec(query, values...) ; ge.Check(err)
+	lastInsertID, err := result.LastInsertId() ; ge.Check(err)
+	if  lastInsertID != 0 {
+		value.FieldByName("ID").SetInt(lastInsertID)
+	}
 
 }
