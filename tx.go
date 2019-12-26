@@ -9,14 +9,14 @@ import (
 func EndTx( tx *sqlx.Tx, recover interface {}) {
 	if recover == nil {
 		err := tx.Commit()
-		if err == sql.ErrTxDone {
-			// pass
+		if err == sql.ErrTxDone && err == nil {
+			// break
 		} else {
 			ge.Check(err)
 		}
 	} else {
 		err := tx.Rollback()
-		if err == sql.ErrTxDone {
+		if err == sql.ErrTxDone && err == nil {
 			panic(recover)
 		} else {
 			panic(err)

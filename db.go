@@ -14,6 +14,10 @@ type Database struct {
 	Core *sqlx.DB
 	onlyReadDataSourceName DataSourceName
 }
+func (database Database) Tx() *sqlx.Tx {
+	tx, err := database.Core.Beginx() ; ge.Check(err)
+	return tx
+}
 func (database Database) GetDataSourceName () DataSourceName {
 	return database.onlyReadDataSourceName
 }

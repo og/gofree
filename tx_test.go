@@ -2,7 +2,6 @@ package f_test
 
 import (
 	f "github.com/og/gofree"
-	ge "github.com/og/x/error"
 	grand "github.com/og/x/rand"
 	"testing"
 )
@@ -15,8 +14,7 @@ func TestTx(t *testing.T) {
 		Port:       "3306",
 		DB:         "test_gofree",
 	})
-	tx, err := db.Core.Beginx() ; ge.Check(err)
-	defer func() { f.EndTx(tx, recover()) }()
+	tx := db.Tx() ; defer func() { f.EndTx(tx, recover()) }()
 	{
 		user := User{}
 		has := false
