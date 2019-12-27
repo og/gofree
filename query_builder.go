@@ -172,6 +172,16 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 				}
 			}
 			sqlList.Push(WhereList.Join(" AND "))
+			notEmptyStringSqlList := glist.StringList{}
+			for _, item := range sqlList.Value {
+				if item != "" {
+					notEmptyStringSqlList.Push(item)
+				}
+			}
+			sqlList = notEmptyStringSqlList
+			if sqlList.Value[len(sqlList.Value)-1] == "WHERE" {
+				sqlList.Pop()
+			}
 		}
 	}
 	{

@@ -627,6 +627,14 @@ func TestQB_Sql(t *testing.T) {
 	{
 		{
 			sql, values := f.QB{
+				Table: "user",
+				Where: f.And("title", f.Ignore()),
+			}.GetSelect()
+			assert.Equal(t, "SELECT * FROM `user`", sql)
+			assert.Equal(t, []interface {}(nil), values)
+		}
+		{
+			sql, values := f.QB{
 				Where: f.And("title", f.Ignore()),
 			}.BindModel(&User{}).GetSelect()
 			assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL", sql)
