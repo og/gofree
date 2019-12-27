@@ -51,6 +51,9 @@ func Or (find  ...[]AND) (andList []AND)   {
 	}
 	return
 }
+//  f.And("name","nimo")
+// 接收 ...interface{} 作为参数而不是 map[string]interface{} 是因为会存在这种情况
+// f.And("age", f.Lt(19), "age", f.Gt(10))
 func And(v ...interface{})  []AND {
 	and := AND{}
 	for i:=0;i<len(v);i++ {
