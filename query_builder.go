@@ -6,6 +6,7 @@ import (
 	gjson "github.com/og/go-json"
 	ge "github.com/og/x/error"
 	glist "github.com/og/x/list"
+	l "github.com/og/x/log"
 	gmap "github.com/og/x/map"
 	gtime "github.com/og/x/time"
 	"github.com/pkg/errors"
@@ -407,3 +408,16 @@ func (qb QB) BindModel(model interface{}) QB {
 	return qb
 }
 
+
+func (qb QB) Paging(page int , perPage int) QB {
+	if page == 0 {
+		page = 1
+	}
+	if perPage == 0 {
+		perPage = 10
+		l.V("gofree: Paging(page, perPage) alert perPage is 0 ,perPage can't be 0 . gofree will set perPage 10. but you nedd check your code.")
+	}
+	qb.Offset = (page - 1) * perPage
+	qb.Limit = perPage
+	return qb
+}
