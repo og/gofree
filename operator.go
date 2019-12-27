@@ -118,5 +118,10 @@ func Day(v time.Time) Filter{
 		TimeValue: v,
 	}
 }
+func Ignore () Filter {
+	return Filter{
+		Symbol: "GOFREE_IGNORE",
+	}
+}
 const DESC = "DESC"
 const ASC = "ASC"

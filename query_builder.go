@@ -36,7 +36,7 @@ type QB struct {
 	Update Map
 	Count bool
 	Debug bool
-	Check string
+	Check []string
 }
 
 
@@ -236,9 +236,20 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 		"sql": sql,
 		"values": gjson.String(sqlValues),
 	})
-	if qb.Check != "" && qb.Check != sql {
-		panic("sql check fail:# diff:\r\n" + diff.CharacterDiff(sql, qb.Check) + "\r\n# actual\r\n" + sql + "\r\n# expect:\r\n" + qb.Check)
+	if len(qb.Check) != 0 {
+		matched := false
+		for _, checkSQL := range qb.Check {
+			if checkSQL == sql {
+				matched = true
+			}
+		}
+		if !matched {
+			for _, checkSQL := range qb.Check {
+				panic("sql check fail:# diff:\r\n" + diff.CharacterDiff(sql, checkSQL) + "\r\n# actual\r\n" + sql + "\r\n# expect:\r\n" + checkSQL)
+			}
+		}
 	}
+
 	return
 }
 
@@ -320,6 +331,8 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 			fieldSymbolCondition.Push(wrapField(field), filter.Symbol)
 			fieldSymbolCondition.Push("?")
 			*sqlValues = append(*sqlValues, likeValue)
+		case "GOFREE_IGNORE":
+			// 啥都不做
 		default:
 			fieldSymbolCondition.Push(wrapField(field), filter.Symbol)
 			fieldSymbolCondition.Push("?")
