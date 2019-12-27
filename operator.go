@@ -125,3 +125,31 @@ func Ignore () Filter {
 }
 const DESC = "DESC"
 const ASC = "ASC"
+
+func IgnoreWhenEqual(value string, ignoreValue string) (filter Filter) {
+	if value == ignoreValue {
+		filter = Ignore()
+		return
+	} else {
+		filter = Eql(value)
+		return
+	}
+}
+func IgnoreWhenEqualCustomCallFilter (value string, ignoreValue string, callFilter func(v interface{}) Filter) (filter Filter) {
+	if value == ignoreValue {
+		filter = Ignore()
+		return
+	} else {
+		filter = callFilter(value)
+		return
+	}
+}
+func IgnoreWhenEqualCustomValue (value string, ignoreValue string, customFilter Filter) (filter Filter) {
+	if value == ignoreValue {
+		filter = Ignore()
+		return
+	} else {
+		filter = customFilter
+		return
+	}
+}
