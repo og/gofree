@@ -16,14 +16,14 @@ func Rollback(tx *sqlx.Tx) {
 func AutoCommit( tx *sqlx.Tx, recover interface {}) {
 	if recover == nil {
 		err := tx.Commit()
-		if err == sql.ErrTxDone && err == nil {
+		if err == sql.ErrTxDone{
 			// break
 		} else {
 			ge.Check(err)
 		}
 	} else {
 		err := tx.Rollback()
-		if err == sql.ErrTxDone && err == nil {
+		if err == sql.ErrTxDone{
 			panic(recover)
 		} else {
 			panic(err)
