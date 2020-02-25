@@ -3,7 +3,6 @@ package f
 import (
 	"github.com/jmoiron/sqlx"
 	ge "github.com/og/x/error"
-	"os"
 )
 
 func newTx(tx *sqlx.Tx) Tx {
@@ -35,21 +34,4 @@ func (tx Tx) End(recoverValue interface{}) {
 		tx.Rollback()
 		panic(recoverValue) // 将错误传递
 	}
-}
-
-func A() {
-	tx := newTx()
-	defer func() { tx.End(recover()) }()
-	// sql code
-	file := os.OpenFile("some")
-	defer func() {
-		file.Clone()
-	}()
-	defer func () {
-		r := recover()
-		if r != nil {
-			// do some
-		}
-	}
-	// some make panic code
 }
