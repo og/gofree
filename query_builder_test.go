@@ -628,14 +628,14 @@ func TestQB_Sql(t *testing.T) {
 		{
 			sql, values := f.QB{
 				Table: "user",
-				Where: f.And("title", f.IgnoreEmpty("")),
+				Where: f.And("title", f.IgnoreEmpty(f.Eql, "")),
 			}.GetSelect()
 			assert.Equal(t, "SELECT * FROM `user`", sql)
 			assert.Equal(t, []interface {}(nil), values)
 		}
 		{
 			sql, values := f.QB{
-				Where: f.And("title", f.IgnoreEmpty("")),
+				Where: f.And("title", f.IgnoreEmpty(f.Eql, "")),
 			}.BindModel(&User{}).GetSelect()
 			assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL", sql)
 			assert.Equal(t, []interface {}(nil), values)
@@ -652,7 +652,7 @@ func TestQB_Sql(t *testing.T) {
 		status := "all"
 		sql, values := f.QB{
 			Where: f.And(
-				"status", f.IgnorePattern(status, "all"),
+				"status", f.IgnorePattern(f.Eql, status, "all"),
 				"gift_id", f.In([]string{"1","2"}),
 			),
 		}.BindModel(&User{}).GetSelect()
@@ -663,11 +663,34 @@ func TestQB_Sql(t *testing.T) {
 		status := "done"
 		sql, values := f.QB{
 			Where: f.And(
-				"status", f.IgnorePattern(status, "all"),
+				"status", f.IgnorePattern(f.Eql, status, "all"),
 				"gift_id", f.In([]string{"1","2"}),
 			),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `status` = ? AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{"1", "2", "done"}, values)
 	}
+	{
+		list := []string{}
+		sql, values := f.QB{
+			Where: f.And(
+				"status", f.Ignore(f.In(list), len(list) == 0),
+				"gift_id", f.In([]string{"1","2"}),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"1", "2"}, values)
+	}
+	{
+		list := []string{"a","b"}
+		sql, values := f.QB{
+			Where: f.And(
+				"status", f.Ignore(f.In(list), len(list) == 0),
+				"gift_id", f.In([]string{"1","2"}),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `status` IN (?, ?) AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"1", "2", "a", "b"}, values)
+	}
+
 }

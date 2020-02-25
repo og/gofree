@@ -14,7 +14,10 @@ type Filter struct {
 	Custom string
 	CustomSQL string
 	TimeValue time.Time
+	StartTime time.Time
+	EndTime time.Time
 }
+type FilterFunc func (v interface{}) Filter
 func Eql(v interface{}) Filter {
 	return Filter{
 		Value: v,
@@ -118,6 +121,15 @@ func Day(v time.Time) Filter{
 		TimeValue: v,
 	}
 }
+func DayRange(startTime time.Time, endTime time.Time) Filter {
+	return Filter{
+		Symbol: "dayRange",
+		StartTime: startTime,
+		EndTime: endTime,
+	}
+}
+
+
 func ignoreFilter () Filter {
 	return Filter{
 		Symbol: "GOFREE_IGNORE",
@@ -134,33 +146,32 @@ const ASC = "ASC"
 	使用场景:
 	f.QB{
 		Where: f.And(
-			"name": f.IgnoreEmpty(query.Name)
+			"name": f.IgnoreEmpty(f.Eql, query.Name)
 		),
 	}
 */
-func IgnoreEmpty(query string) Filter {
-	return IgnorePattern(query, "")
+func IgnoreEmpty(filterFunc FilterFunc, query string) Filter {
+	return IgnorePattern(filterFunc, query, "")
 }
 
+
 // 基于 IgnoreEmpty 的场景下，有些请求并不一定会是空，而是 ?status=all 来表示搜索全部
-// ?status=done 表示搜索已完成的数据 ,此时使用 IgnorePattern(query, "all")
+// ?status=done 表示搜索已完成的数据 ,此时使用 IgnorePattern(f.Eql, query.Status, "all")
 /*
 	使用场景:
 	f.QB{
 		Where: f.And(
-			"status": f.IgnorePattern(query.Status, "all")
+			"status": f.IgnorePattern( f.Eql, query.Status, "all")
 		),
 	}
 */
-func IgnorePattern(query string, pattern string) Filter {
+func IgnorePattern(filterFunc FilterFunc, query string, pattern string) Filter {
 	if query == pattern {
 		return ignoreFilter()
 	} else {
-		return Eql(query)
+		return filterFunc(query)
 	}
 }
-
-
 // 在 IgnoreEmpty 和 IgnorePattern 的场景下WHERE 语句都是 field = ?
 // 有些场景下可能需要 where field in ? 或者没有 field in ?
 // 此时使用 Ignore 完全自定义控制
@@ -172,10 +183,13 @@ func IgnorePattern(query string, pattern string) Filter {
 		),
 	}
 */
-func Ignore(ignoreCondition bool, filter Filter)  Filter {
+func Ignore(filter Filter, ignoreCondition bool)  Filter {
 	if ignoreCondition {
 		return ignoreFilter()
 	} else {
 		return filter
 	}
 }
+
+
+
