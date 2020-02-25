@@ -130,12 +130,28 @@ const ASC = "ASC"
 // 比如用户搜索姓名, ?name=nimo 时SQL是 WHERE name = ? 。
 // 如果 ?name= （空字符串）则 sql 没有 name = ?
 // gofree 称这种 where 条件为 ignore empty
+/*
+	使用场景:
+	f.QB{
+		Where: f.And(
+			"name": f.IgnoreEmpty(query.Name)
+		),
+	}
+*/
 func IgnoreEmpty(query string) Filter {
 	return IgnorePattern(query, "")
 }
 
 // 基于 IgnoreEmpty 的场景下，有些请求并不一定会是空，而是 ?status=all 来表示搜索全部
 // ?status=done 表示搜索已完成的数据 ,此时使用 IgnorePattern(query, "all")
+/*
+	使用场景:
+	f.QB{
+		Where: f.And(
+			"status": f.IgnorePattern(query.Status, "all")
+		),
+	}
+*/
 func IgnorePattern(query string, pattern string) Filter {
 	if query == pattern {
 		return ignoreFilter()
@@ -148,6 +164,14 @@ func IgnorePattern(query string, pattern string) Filter {
 // 在 IgnoreEmpty 和 IgnorePattern 的场景下WHERE 语句都是 field = ?
 // 有些场景下可能需要 where field in ? 或者没有 field in ?
 // 此时使用 Ignore 完全自定义控制
+/*
+	使用场景:
+	f.QB{
+		Where: f.And(
+			"id": f.Ignore(len(query.idList) == 0, f.In(query.idList))
+		),
+	}
+*/
 func Ignore(ignoreCondition bool, filter Filter)  Filter {
 	if ignoreCondition {
 		return ignoreFilter()
