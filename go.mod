@@ -10,7 +10,7 @@ require (
 	github.com/jinzhu/gorm v1.9.11 // indirect
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/kardianos/govendor v1.0.9 // indirect
-	github.com/mediocregopher/radix/v3 v3.4.2
+	github.com/mediocregopher/radix/v3 v3.4.2 // indirect
 	github.com/og/go-json v0.0.0-20190910100036-3eb9c488b296
 	github.com/og/x v0.0.0-20191010135317-245aa5f2dfe7
 	github.com/og/x/json v0.0.0-20190911074324-46c1b3e856fb

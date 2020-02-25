@@ -14,10 +14,6 @@ type Database struct {
 	Core *sqlx.DB
 	onlyReadDataSourceName DataSourceName
 }
-func (database Database) Tx() *sqlx.Tx {
-	tx, err := database.Core.Beginx() ; ge.Check(err)
-	return tx
-}
 func (database Database) GetDataSourceName () DataSourceName {
 	return database.onlyReadDataSourceName
 }
@@ -35,8 +31,8 @@ func (db *Database) OneQB(modelPtr Model, has *bool, qb QB) {
 	db.coreOneQB(txOrDB{ UseTx: false,}, modelPtr, has, qb)
 	return
 }
-func (db *Database) TxOneQB(tx *sqlx.Tx, modelPtr Model, has *bool, qb QB) {
-	db.coreOneQB(txOrDB{ UseTx: true,Tx: tx,}, modelPtr,has, qb)
+func (db *Database) TxOneQB(tx Tx, modelPtr Model, has *bool, qb QB) {
+	db.coreOneQB(txOrDB{ UseTx: true,Tx: tx.core,}, modelPtr,has, qb)
 	return
 }
 type txOrDB struct {
@@ -67,7 +63,7 @@ func (db *Database) OneID(modelPtr Model, has *bool, id interface{}) {
 	return
 }
 
-func (db *Database) TxOneID(tx *sqlx.Tx, modelPtr Model, has *bool, id interface{}) {
+func (db *Database) TxOneID(tx Tx, modelPtr Model, has *bool, id interface{}) {
 	db.TxOneQB(tx, modelPtr, has, QB{
 		Where:And("id", id),
 	})
@@ -76,8 +72,8 @@ func (db *Database) TxOneID(tx *sqlx.Tx, modelPtr Model, has *bool, id interface
 func (db *Database) CountQB(modelPtr Model, qb QB) (count int) {
 	return db.coreCountQB(txOrDB{UseTx:false,}, modelPtr, qb)
 }
-func (db *Database) TxCountQB(tx *sqlx.Tx, modelPtr Model, qb QB) (count int) {
-	return db.coreCountQB(txOrDB{UseTx:true, Tx: tx}, modelPtr, qb)
+func (db *Database) TxCountQB(tx Tx, modelPtr Model, qb QB) (count int) {
+	return db.coreCountQB(txOrDB{UseTx:true, Tx: tx.core}, modelPtr, qb)
 }
 func (db *Database) coreCountQB(txDB txOrDB, modelPtr Model, qb QB) (count int) {
 	qb.Count = true
@@ -96,8 +92,8 @@ func (db *Database) coreCountQB(txDB txOrDB, modelPtr Model, qb QB) (count int) 
 func (db *Database) ListQB(modelListPtr interface{}, qb QB) {
 	db.coreListQB(txOrDB{UseTx: false}, modelListPtr, qb)
 }
-func (db *Database) TxListQB(tx *sqlx.Tx, modelListPtr interface{}, qb QB) {
-	db.coreListQB(txOrDB{UseTx: false, Tx: tx}, modelListPtr, qb)
+func (db *Database) TxListQB(tx Tx, modelListPtr interface{}, qb QB) {
+	db.coreListQB(txOrDB{UseTx: false, Tx: tx.core}, modelListPtr, qb)
 }
 func (db *Database) coreListQB(txDB txOrDB, modelListPtr interface{}, qb QB) {
 	reflectItemValue := reflect.MakeSlice(reflect.TypeOf(modelListPtr).Elem(), 1,1).Index(0)
@@ -163,8 +159,8 @@ func (db *Database) coreCreate(txDB txOrDB, modelPtr interface{}) {
 func (db *Database) Create(modelPtr interface{}) {
 	db.coreCreate(txOrDB{}, modelPtr)
 }
-func (db *Database) TxCreate(tx *sqlx.Tx, modelPtr interface{}) {
-	db.coreCreate(txOrDB{UseTx: true, Tx: tx}, modelPtr)
+func (db *Database) TxCreate(tx Tx, modelPtr interface{}) {
+	db.coreCreate(txOrDB{UseTx: true, Tx: tx.core}, modelPtr)
 }
 
 func (db *Database) coreDeleteQB(txDB txOrDB, modelPtr interface{}, qb QB) {
@@ -186,8 +182,8 @@ func (db *Database) coreDeleteQB(txDB txOrDB, modelPtr interface{}, qb QB) {
 func (db *Database) DeleteQB(modelPtr interface{}, qb QB) {
 	db.coreDeleteQB(txOrDB{}, modelPtr, qb)
 }
-func (db *Database) TxDeleteQB(tx *sqlx.Tx,modelPtr interface{}, qb QB) {
-	db.coreDeleteQB(txOrDB{UseTx: true, Tx: tx}, modelPtr, qb)
+func (db *Database) TxDeleteQB(tx Tx,modelPtr interface{}, qb QB) {
+	db.coreDeleteQB(txOrDB{UseTx: true, Tx: tx.core}, modelPtr, qb)
 }
 
 
@@ -214,15 +210,15 @@ func (db *Database) coreDelete(txDB txOrDB, modelPtr interface{}) {
 func (db *Database) Delete(modelPtr interface{}) {
 	db.coreDelete(txOrDB{}, modelPtr)
 }
-func (db *Database) TxDelete(tx *sqlx.Tx,modelPtr interface{}, qb QB) {
-	db.coreDelete(txOrDB{UseTx: true, Tx: tx}, modelPtr)
+func (db *Database) TxDelete(tx Tx,modelPtr interface{}, qb QB) {
+	db.coreDelete(txOrDB{UseTx: true, Tx: tx.core}, modelPtr)
 }
 
 func (db *Database) Update(modelPtr interface{}) {
 	db.coreUpdate(txOrDB{}, modelPtr)
 }
-func (db *Database) TxUpdate(tx *sqlx.Tx, modelPtr interface{}) {
-	db.coreUpdate(txOrDB{UseTx: true, Tx: tx}, modelPtr)
+func (db *Database) TxUpdate(tx Tx, modelPtr interface{}) {
+	db.coreUpdate(txOrDB{UseTx: true, Tx: tx.core}, modelPtr)
 }
 func (db *Database) coreUpdate (txDB txOrDB, modelPtr interface{}) {
 	value := reflect.ValueOf(modelPtr).Elem()
@@ -267,4 +263,9 @@ func (db *Database) coreUpdate (txDB txOrDB, modelPtr interface{}) {
 	if  lastInsertID != 0 {
 		value.FieldByName("ID").SetInt(lastInsertID)
 	}
+}
+
+func (db Database) Tx() Tx {
+	tx, err := db.Core.Beginx() ; ge.Check(err)
+	return newTx(tx)
 }

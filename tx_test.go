@@ -14,13 +14,18 @@ func TestTx(t *testing.T) {
 		Port:       "3306",
 		DB:         "test_gofree",
 	})
-	tx := db.Tx() ; defer func() { f.EndTx(tx, recover()) }()
+	tx := db.Tx() ; defer func() { tx.End( recover()) }()
 	{
 		user := User{}
 		has := false
 		db.TxOneID(tx, &user, &has, "1")
 		user.Name = grand.StringLetter(4)
 		db.TxUpdate(tx, &user)
+		{
+			readUser := User{}
+			has := false
+			db.OneID(&readUser, &has, "1")
+		}
 	}
 	{
 		user := User{}
@@ -29,4 +34,7 @@ func TestTx(t *testing.T) {
 		user.Name = grand.StringLetter(1)
 		db.TxUpdate(tx, &user)
 	}
+	// if (some) {
+	// 	tx.Rollback()
+	// }
 }

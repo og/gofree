@@ -1,32 +1,55 @@
 package f
 
 import (
-	"database/sql"
 	"github.com/jmoiron/sqlx"
 	ge "github.com/og/x/error"
+	"os"
 )
-// 将 tx.Rollback() 返回的错误 panic(err)
-func Rollback(tx *sqlx.Tx) {
-	ge.Check(tx.Rollback())
+
+func newTx(tx *sqlx.Tx) Tx {
+	return Tx{core: tx}
 }
-// 自动提交事务
-// 在使用 `tx := db.Core.MustBegin()` 下一行加上 `defer func() { f.AutoCommitTx(tx, recover()) }()`
-// 能够在函数执行结束时判断如何没有任何 `recover` 并没有执行过 `tx.Commit()` 或 `tx.Rollback()` 时执行 `tx.Commit()`
-// 这样只需要在逻辑代码中需取消事务的地方加上 tx.Rollback() 或者 f.Rollback()
-func AutoCommit( tx *sqlx.Tx, recover interface {}) {
-	if recover == nil {
-		err := tx.Commit()
-		if err == sql.ErrTxDone{
-			// break
-		} else {
-			ge.Check(err)
-		}
+type Tx struct {
+	done bool
+	core *sqlx.Tx
+}
+func (tx Tx) Commit() {
+	if !tx.done {
+		ge.Check(tx.core.Commit())
+		tx.done = true
+	}
+}
+
+func (tx Tx) Rollback() {
+	if !tx.done {
+		ge.Check(tx.core.Rollback())
+		tx.done = true
+	}
+}
+// 使用此函数千万注意不要出现多个 defer 都运行 recover() ，并且 recover 不是 nil 时会向上传递
+// 建议阅读此函数源码了解运行机制（代码很简单的哦）
+func (tx Tx) End(recoverValue interface{}) {
+	if recoverValue == nil {
+		tx.Commit()
 	} else {
-		err := tx.Rollback()
-		if err == sql.ErrTxDone{
-			panic(recover)
-		} else {
-			panic(err)
+		tx.Rollback()
+		panic(recoverValue) // 将错误传递
+	}
+}
+
+func A() {
+	tx := newTx()
+	defer func() { tx.End(recover()) }()
+	// sql code
+	file := os.OpenFile("some")
+	defer func() {
+		file.Clone()
+	}()
+	defer func () {
+		r := recover()
+		if r != nil {
+			// do some
 		}
 	}
+	// some make panic code
 }
