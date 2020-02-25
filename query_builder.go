@@ -274,6 +274,7 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 		if reflect.ValueOf(filter.Value).IsValid() && reflect.TypeOf(filter.Value).String() == "time.Time" {
 			panic("gofree: can not use time.Time be sql value, mayby you should time.Format(layout), \r\n` "+ field + ":"+ filter.Value.(time.Time).Format(gtime.Second) + "`")
 		}
+		shouldIgnore := false
 		var fieldSymbolCondition glist.StringList
 		switch filter.Symbol {
 		case "year":
@@ -346,13 +347,15 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 			fieldSymbolCondition.Push("?")
 			*sqlValues = append(*sqlValues, likeValue)
 		case "GOFREE_IGNORE":
-			// 啥都不做
+			shouldIgnore = true
 		default:
 			fieldSymbolCondition.Push(wrapField(field), filter.Symbol)
 			fieldSymbolCondition.Push("?")
 			*sqlValues = append(*sqlValues, filter.Value)
 		}
-		whereList.Push(fieldSymbolCondition.Join(" "))
+		if !shouldIgnore {
+			whereList.Push(fieldSymbolCondition.Join(" "))
+		}
 	}
 }
 func parseWhere (Where []AND, WhereList *glist.StringList, sqlValues *[]interface{}) {

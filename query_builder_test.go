@@ -628,14 +628,14 @@ func TestQB_Sql(t *testing.T) {
 		{
 			sql, values := f.QB{
 				Table: "user",
-				Where: f.And("title", f.Ignore()),
+				Where: f.And("title", f.IgnoreEmpty("")),
 			}.GetSelect()
 			assert.Equal(t, "SELECT * FROM `user`", sql)
 			assert.Equal(t, []interface {}(nil), values)
 		}
 		{
 			sql, values := f.QB{
-				Where: f.And("title", f.Ignore()),
+				Where: f.And("title", f.IgnoreEmpty("")),
 			}.BindModel(&User{}).GetSelect()
 			assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL", sql)
 			assert.Equal(t, []interface {}(nil), values)
@@ -647,5 +647,27 @@ func TestQB_Sql(t *testing.T) {
 			assert.Equal(t, "SELECT * FROM `user` WHERE `title` = ? AND `deleted_at` IS NULL", sql)
 			assert.Equal(t, []interface{}{"abc"}, values)
 		}
+	}
+	{
+		status := "all"
+		sql, values := f.QB{
+			Where: f.And(
+				"status", f.IgnorePattern(status, "all"),
+				"gift_id", f.In([]string{"1","2"}),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"1", "2"}, values)
+	}
+	{
+		status := "done"
+		sql, values := f.QB{
+			Where: f.And(
+				"status", f.IgnorePattern(status, "all"),
+				"gift_id", f.In([]string{"1","2"}),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `status` = ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"1", "2", "done"}, values)
 	}
 }

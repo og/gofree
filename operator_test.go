@@ -5,25 +5,17 @@ import (
 	"testing"
 )
 
-func TestIgnoreWhenEqual(t *testing.T) {
-	assert.Equal(t, IgnoreWhenEqual("success", "all"),Eql("success"))
-	assert.Equal(t, IgnoreWhenEqual("all", "all"), Ignore())
+func TestIgnorePatternAndEmpty(t *testing.T) {
+	assert.Equal(t, IgnorePattern("success", "all"),Eql("success"))
+	assert.Equal(t, IgnorePattern("all", "all"), ignoreFilter())
 
-	assert.Equal(t, IgnoreWhenEqual("success", ""),Eql("success"))
-	assert.Equal(t, IgnoreWhenEqual("", ""), Ignore())
+	assert.Equal(t, IgnoreEmpty("success"),Eql("success"))
+	assert.Equal(t, IgnoreEmpty(""), ignoreFilter())
 }
-func TestIgnoreWhenEqualCustomCallFilter(t *testing.T) {
-	assert.Equal(t, IgnoreWhenEqualCustomCallFilter("success", "all", Like),Like("success"))
-	assert.Equal(t, IgnoreWhenEqualCustomCallFilter("all", "all", Like),Ignore())
+func TestIgnore(t *testing.T) {
+	assert.Equal(t, Ignore("success" == "all", Like("success")),Like("success"))
+	assert.Equal(t, Ignore("all" == "all", Like("success")),ignoreFilter())
 
-	assert.Equal(t, IgnoreWhenEqualCustomCallFilter("success", "",Like),Like("success"))
-	assert.Equal(t, IgnoreWhenEqualCustomCallFilter("", "", Like), Ignore())
-}
-
-func TestIgnoreWhenEqualCustomValue(t *testing.T) {
-	assert.Equal(t, IgnoreWhenEqualCustomValue("success", "all", Like("success")),Like("success"))
-	assert.Equal(t, IgnoreWhenEqualCustomValue("all", "all", Like("success")),Ignore())
-
-	assert.Equal(t, IgnoreWhenEqualCustomValue("success", "",Like("success")),Like("success"))
-	assert.Equal(t, IgnoreWhenEqualCustomValue("", "", Like("success")), Ignore())
+	assert.Equal(t, Ignore("success" == "", Like("success")),Like("success"))
+	assert.Equal(t, Ignore("" == "", Like("")),ignoreFilter())
 }

@@ -118,7 +118,7 @@ func Day(v time.Time) Filter{
 		TimeValue: v,
 	}
 }
-func Ignore () Filter {
+func ignoreFilter () Filter {
 	return Filter{
 		Symbol: "GOFREE_IGNORE",
 	}
@@ -126,30 +126,32 @@ func Ignore () Filter {
 const DESC = "DESC"
 const ASC = "ASC"
 
-func IgnoreWhenEqual(value string, ignoreValue string) (filter Filter) {
-	if value == ignoreValue {
-		filter = Ignore()
-		return
+// 在查询中有一种常见的场景，当某个请求参数为空时不增加 where。
+// 比如用户搜索姓名, ?name=nimo 时SQL是 WHERE name = ? 。
+// 如果 ?name= （空字符串）则 sql 没有 name = ?
+// gofree 称这种 where 条件为 ignore empty
+func IgnoreEmpty(query string) Filter {
+	return IgnorePattern(query, "")
+}
+
+// 基于 IgnoreEmpty 的场景下，有些请求并不一定会是空，而是 ?status=all 来表示搜索全部
+// ?status=done 表示搜索已完成的数据 ,此时使用 IgnorePattern(query, "all")
+func IgnorePattern(query string, pattern string) Filter {
+	if query == pattern {
+		return ignoreFilter()
 	} else {
-		filter = Eql(value)
-		return
+		return Eql(query)
 	}
 }
-func IgnoreWhenEqualCustomCallFilter (value string, ignoreValue string, callFilter func(v interface{}) Filter) (filter Filter) {
-	if value == ignoreValue {
-		filter = Ignore()
-		return
+
+
+// 在 IgnoreEmpty 和 IgnorePattern 的场景下WHERE 语句都是 field = ?
+// 有些场景下可能需要 where field in ? 或者没有 field in ?
+// 此时使用 Ignore 完全自定义控制
+func Ignore(ignoreCondition bool, filter Filter)  Filter {
+	if ignoreCondition {
+		return ignoreFilter()
 	} else {
-		filter = callFilter(value)
-		return
-	}
-}
-func IgnoreWhenEqualCustomValue (value string, ignoreValue string, customFilter Filter) (filter Filter) {
-	if value == ignoreValue {
-		filter = Ignore()
-		return
-	} else {
-		filter = customFilter
-		return
+		return filter
 	}
 }
