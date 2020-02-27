@@ -1,6 +1,7 @@
 package f
 
 import (
+	gtime "github.com/og/x/time"
 	"time"
 )
 
@@ -9,14 +10,49 @@ type Filter struct {
 	FieldWrap string
 	FieldWarpArg string
 	Value interface{}
+	Kind string
 	Symbol string
 	Like string
 	Custom string
 	CustomSQL string
 	TimeValue time.Time
-	StartTime time.Time
-	EndTime time.Time
+	TimeRange FilterTimeRange
 }
+type FilterTimeRange struct {
+	Range  gtime.Range
+	SQLValueLayout string `note:"value use gtime.Day gtime.Second"`
+}
+
+
+func (self Filter) Dict () (dict struct {
+	Kind struct{
+		Day string
+		Not string
+		IsNotNull string
+		IsNull string
+		Custom string
+		CustomSQL string
+		In string
+		NotIn string
+		Like string
+		GofreeIgnore string
+		TimeRange string
+	}
+}) {
+	dict.Kind.Day = "Day"
+	dict.Kind.Not = "NOT"
+	dict.Kind.IsNotNull = "IS NOT NULL"
+	dict.Kind.IsNull = "IS NULL"
+	dict.Kind.Custom = "Custom"
+	dict.Kind.CustomSQL = "CustomSQL"
+	dict.Kind.In = "IN"
+	dict.Kind.NotIn = "NOT IN"
+	dict.Kind.Like = "LIKE"
+	dict.Kind.GofreeIgnore = "GofreeIgnore"
+	dict.Kind.TimeRange = "TimeRange"
+	return
+}
+
 type FilterFunc func (v interface{}) Filter
 func Eql(v interface{}) Filter {
 	return Filter{
@@ -57,14 +93,14 @@ func GtEql(v interface{}) Filter {
 func Like(v interface{}) Filter {
 	return Filter{
 		Value: v,
-		Symbol: "LIKE",
+		Kind:Filter{}.Dict().Kind.Like,
 		Like: "have",
 	}
 }
 func LikeStart(v interface{}) Filter {
 	return Filter{
 		Value: v,
-		Symbol: "LIKE",
+		Kind: Filter{}.Dict().Kind.Like,
 		Like: "start",
 	}
 }
@@ -72,7 +108,7 @@ func LikeStart(v interface{}) Filter {
 func LikeEnd(v interface{}) Filter {
 	return Filter{
 		Value: v,
-		Symbol: "LIKE",
+		Kind: Filter{}.Dict().Kind.Like,
 		Like: "end",
 	}
 }
@@ -80,59 +116,53 @@ func LikeEnd(v interface{}) Filter {
 func CustomSQL(sql string, values ...interface{}) Filter {
 	return Filter{
 		Value: values,
-		Symbol: "CustomSQL",
+		Kind: Filter{}.Dict().Kind.CustomSQL,
 		CustomSQL: sql,
 	}
 }
 func Custom (template string, v ...interface{}) Filter {
 	return Filter{
 		Value: v,
-		Symbol: "custom",
+		Kind: Filter{}.Dict().Kind.Custom,
 		Custom: template,
 	}
 }
 func In (v interface{}) Filter {
 	return Filter{
 		Value: v,
-		Symbol: "IN",
+		Kind: Filter{}.Dict().Kind.In,
 	}
 }
 
 func NotIn (v interface{}) Filter {
 	return Filter{
 		Value: v,
-		Symbol: "NOT IN",
+		Kind: Filter{}.Dict().Kind.NotIn,
 	}
 }
 func IsNull () Filter {
 	return Filter{
-		Symbol: "IS NULL",
+		Kind: Filter{}.Dict().Kind.IsNull,
 	}
 }
 
 func IsNotNull () Filter {
 	return Filter{
-		Symbol: "IS NOT NULL",
+		Kind: Filter{}.Dict().Kind.IsNotNull,
 	}
 }
 func Day(v time.Time) Filter{
 	return Filter{
-		Symbol: "day",
+		Kind: Filter{}.Dict().Kind.Day,
 		TimeValue: v,
 	}
 }
-func DayRange(startTime time.Time, endTime time.Time) Filter {
-	return Filter{
-		Symbol: "dayRange",
-		StartTime: startTime,
-		EndTime: endTime,
-	}
-}
+
 
 
 func ignoreFilter () Filter {
 	return Filter{
-		Symbol: "GOFREE_IGNORE",
+		Kind: Filter{}.Dict().Kind.GofreeIgnore,
 	}
 }
 const DESC = "DESC"
@@ -191,5 +221,11 @@ func Ignore(filter Filter, ignoreCondition bool)  Filter {
 	}
 }
 
+func TimeRange(data gtime.Range, sqlValueLayout string) Filter {
+	return Filter{
+		Kind: Filter{}.Dict().Kind.TimeRange,
+		TimeRange: FilterTimeRange{Range: data, SQLValueLayout: sqlValueLayout},
+	}
+}
 
 

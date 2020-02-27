@@ -276,30 +276,24 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 		}
 		shouldIgnore := false
 		var fieldSymbolCondition glist.StringList
-		switch filter.Symbol {
-		case "year":
-			fieldSymbolCondition.Push(filter.FieldWrap+"("+field+",'"+filter.FieldWarpArg+"')", "=")
-			fieldSymbolCondition.Push("?")
-			*sqlValues = append(*sqlValues, filter.Value)
-		case "month":
-			fieldSymbolCondition.Push(filter.FieldWrap+"("+field+",'"+filter.FieldWarpArg+"')", "=")
-			fieldSymbolCondition.Push("?")
-			*sqlValues = append(*sqlValues, filter.Value)
-		case "day":
-			fieldSymbolCondition.Push(field + " >= ?")
+		dict := filter.Dict().Kind
+		switchValue := filter.Kind
+		switch switchValue {
+		case dict.Day:
+			fieldSymbolCondition.Push(wrapField(field) + " >= ?")
 			*sqlValues = append(*sqlValues, filter.TimeValue.Format(gtime.Day) + " 00:00:00")
 			fieldSymbolCondition.Push("AND")
-			fieldSymbolCondition.Push(field + " <= ?")
+			fieldSymbolCondition.Push(wrapField(field) + " <= ?")
 			*sqlValues = append(*sqlValues, filter.TimeValue.Format(gtime.Day) + " 23:59:59")
-		case "NOT":
+		case dict.Not:
 			fieldSymbolCondition.Push(wrapField(field), "!=")
 			fieldSymbolCondition.Push("?")
 			*sqlValues = append(*sqlValues, filter.Value)
-		case "IS NOT NULL":
-			fieldSymbolCondition.Push(wrapField(field), filter.Symbol)
-		case "IS NULL":
-			fieldSymbolCondition.Push(wrapField(field), filter.Symbol)
-		case "custom":
+		case dict.IsNotNull:
+			fieldSymbolCondition.Push(wrapField(field), "IS NOT NULL")
+		case dict.IsNull:
+			fieldSymbolCondition.Push(wrapField(field), "IS NULL")
+		case dict.Custom:
 			var valueList []interface{}
 			anyValue := reflect.ValueOf(filter.Value)
 
@@ -308,7 +302,7 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 			}
 			*sqlValues = append(*sqlValues, valueList...)
 			fieldSymbolCondition.Push(wrapField(field), filter.Custom)
-		case "CustomSQL":
+		case dict.CustomSQL:
 			var valueList []interface{}
 			anyValue := reflect.ValueOf(filter.Value)
 
@@ -317,8 +311,15 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 			}
 			*sqlValues = append(*sqlValues, valueList...)
 			fieldSymbolCondition.Push("(" + filter.CustomSQL + ")")
-		case "IN", "NOT IN":
-			fieldSymbolCondition.Push(wrapField(field), filter.Symbol)
+		case dict.In, dict.NotIn:
+			symbol := ""
+			switch switchValue {
+			case dict.In:
+				symbol = "IN"
+			case dict.NotIn:
+				symbol = "NOT IN"
+			}
+			fieldSymbolCondition.Push(wrapField(field), symbol)
 			var valueList []interface{}
 			var placeholderList glist.StringList
 			anyValue := reflect.ValueOf(filter.Value)
@@ -332,7 +333,7 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 				*sqlValues = append(*sqlValues, valueList...)
 				fieldSymbolCondition.Push("(" + placeholderList.Join(", ") + ")")
 			}
-		case "LIKE":
+		case dict.Like:
 			var likeValue string
 			filterValueString := fmt.Sprintf("%s", filter.Value)
 			switch filter.Like {
@@ -343,11 +344,34 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 			case "have":
 				likeValue = "%" + filterValueString + "%"
 			}
-			fieldSymbolCondition.Push(wrapField(field), filter.Symbol)
+			fieldSymbolCondition.Push(wrapField(field), "LIKE")
 			fieldSymbolCondition.Push("?")
 			*sqlValues = append(*sqlValues, likeValue)
-		case "GOFREE_IGNORE":
+		case dict.GofreeIgnore:
 			shouldIgnore = true
+		case dict.TimeRange:
+			timeRange := filter.TimeRange.Range
+			valueTime := struct {
+				Start time.Time
+				End time.Time
+			} {}
+			switch timeRange.Type {
+			case timeRange.Dict().Type.Day:
+				valueTime.Start = gtime.StartOfHour(timeRange.Start)
+				valueTime.End = gtime.EndOfHour(timeRange.End)
+			case timeRange.Dict().Type.Month:
+				valueTime.Start = gtime.StartOfDay(timeRange.Start)
+				valueTime.End = gtime.EndOfDay(timeRange.End)
+			case timeRange.Dict().Type.Year:
+				valueTime.Start = gtime.StartOfMonth(timeRange.Start)
+				valueTime.End = gtime.EndOfMonth(timeRange.End)
+			}
+			fieldSymbolCondition.Push(wrapField(field) + " >= ?")
+			*sqlValues = append(*sqlValues, valueTime.Start.Format(filter.TimeRange.SQLValueLayout))
+			fieldSymbolCondition.Push("AND")
+			fieldSymbolCondition.Push(wrapField(field) + " <= ?")
+			*sqlValues = append(*sqlValues, valueTime.End.Format(filter.TimeRange.SQLValueLayout))
+
 		default:
 			fieldSymbolCondition.Push(wrapField(field), filter.Symbol)
 			fieldSymbolCondition.Push("?")

@@ -204,7 +204,7 @@ func TestQB_Sql(t *testing.T) {
 			) ,
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE ( `city` = ? ) OR ( `age` < ? AND `age` > ? AND `name` = ? ) OR ( created_at >= ? AND created_at <= ? )", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE ( `city` = ? ) OR ( `age` < ? AND `age` > ? AND `name` = ? ) OR ( `created_at` >= ? AND `created_at` <= ? )", sqlS)
 		assert.Equal(t, []interface{}{"shanghai", 18, 19, "nimo",  "2018-11-11 00:00:00", "2018-11-11 23:59:59"}, values)
 	}
 	{
@@ -373,7 +373,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE time >= ? AND time <= ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `time` >= ? AND `time` <= ?", sqlS)
 		assert.Equal(t, []interface {}{"2018-11-11 00:00:00", "2018-11-11 23:59:59"}, values)
 	}
 	{
@@ -692,5 +692,56 @@ func TestQB_Sql(t *testing.T) {
 		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `status` IN (?, ?) AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{"1", "2", "a", "b"}, values)
 	}
-
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"create_at", f.TimeRange(gtime.Range{
+					Type:  gtime.Range{}.Dict().Type.Day,
+					Start: gtime.Parse(gtime.Day, "2019-11-11"),
+					End:  gtime.Parse(gtime.Day, "2019-11-23"),
+				}, gtime.Second),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `create_at` >= ? AND `create_at` <= ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"2019-11-11 00:00:00", "2019-11-23 23:59:59"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"date", f.TimeRange(gtime.Range{
+					Type:  gtime.Range{}.Dict().Type.Day,
+					Start: gtime.Parse(gtime.Day, "2019-11-11"),
+					End:  gtime.Parse(gtime.Day, "2019-11-23"),
+				}, gtime.Day),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `date` >= ? AND `date` <= ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"2019-11-11", "2019-11-23"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"date", f.TimeRange(gtime.Range{
+					Type:  gtime.Range{}.Dict().Type.Month,
+					Start: gtime.Parse(gtime.Month, "2019-11"),
+					End:  gtime.Parse(gtime.Month, "2020-02"),
+				}, gtime.Day),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `date` >= ? AND `date` <= ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"2019-11-01", "2020-02-29"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"month", f.TimeRange(gtime.Range{
+					Type:  gtime.Range{}.Dict().Type.Month,
+					Start: gtime.Parse(gtime.Month, "2019-11"),
+					End:  gtime.Parse(gtime.Month, "2020-02"),
+				}, gtime.Month),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `month` >= ? AND `month` <= ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"2019-11", "2020-02"}, values)
+	}
 }
