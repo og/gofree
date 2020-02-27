@@ -357,14 +357,14 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 			} {}
 			switch timeRange.Type {
 			case timeRange.Dict().Type.Day:
-				valueTime.Start = gtime.StartOfHour(timeRange.Start)
-				valueTime.End = gtime.EndOfHour(timeRange.End)
+				valueTime.Start = gtime.FirstHour(timeRange.Start)
+				valueTime.End = gtime.LastHour(timeRange.End)
 			case timeRange.Dict().Type.Month:
-				valueTime.Start = gtime.StartOfDay(timeRange.Start)
-				valueTime.End = gtime.EndOfDay(timeRange.End)
+				valueTime.Start = gtime.FirstDay(timeRange.Start)
+				valueTime.End = gtime.LastDay(timeRange.End)
 			case timeRange.Dict().Type.Year:
-				valueTime.Start = gtime.StartOfMonth(timeRange.Start)
-				valueTime.End = gtime.EndOfMonth(timeRange.End)
+				valueTime.Start = gtime.FirstMonth(timeRange.Start)
+				valueTime.End = gtime.LastMonth(timeRange.End)
 			}
 			fieldSymbolCondition.Push(wrapField(field) + " >= ?")
 			*sqlValues = append(*sqlValues, valueTime.Start.Format(filter.TimeRange.SQLValueLayout))
