@@ -19,6 +19,12 @@ type User struct {
 	UpdatedAt time.Time `db:"updated_at"`
 	DeletedAt sql.NullTime `db:"deleted_at"`
 }
+const fUserID = "id"
+const fUserName = "name"
+const fUserIsSuper = "is_super"
+const fUserCreatedAt = "created_at"
+const fUserUpdatedAt = "updated_at"
+const fUserDeletedAt = "deleted_at"
 func (user User) TableName() string {
 	return "user"
 }
