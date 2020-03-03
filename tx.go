@@ -5,8 +5,8 @@ import (
 	ge "github.com/og/x/error"
 )
 
-func newTx(tx *sqlx.Tx) Tx {
-	return Tx{core: tx}
+func newTx(tx *sqlx.Tx) *Tx {
+	return &Tx{core: tx}
 }
 type Tx struct {
 	done bool
