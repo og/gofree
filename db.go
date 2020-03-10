@@ -2,10 +2,10 @@ package f
 
 import (
 	"database/sql"
+	"errors"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	ge "github.com/og/x/error"
-	"github.com/pkg/errors"
 	"reflect"
 	"time"
 )
@@ -40,6 +40,10 @@ type txOrDB struct {
 	Tx *sqlx.Tx
 }
 func (db *Database) coreOneQB(txDB txOrDB, modelPtr Model, has *bool, qb QB) {
+	_, isPtr := getPtrElem(modelPtr)
+	if !isPtr {
+		panic("db.OneID() or db.OneQB()  arg `modelPtr` must be a ptr")
+	}
 	query, values := qb.BindModel(modelPtr).GetSelect()
 	var row *sqlx.Row
 	if txDB.UseTx {
@@ -113,7 +117,10 @@ func (db *Database) coreListQB(txDB txOrDB, modelListPtr interface{}, qb QB) {
 }
 
 func (db *Database) coreCreate(txDB txOrDB, modelPtr interface{}) {
-	value := reflect.ValueOf(modelPtr).Elem()
+	value, isPtr := getPtrElem(modelPtr)
+	if !isPtr {
+		panic("db.OneID() or db.OneQB()  arg `modelPtr` must be a ptr")
+	}
 	reflect.ValueOf(modelPtr).MethodByName("BeforeCreate").Call([]reflect.Value{})
 	typeValue := reflect.TypeOf(modelPtr).Elem()
 	fieldLen := value.NumField()
@@ -164,6 +171,10 @@ func (db *Database) TxCreate(tx *Tx, modelPtr interface{}) {
 }
 
 func (db *Database) coreDeleteQB(txDB txOrDB, modelPtr interface{}, qb QB) {
+	_, isPtr := getPtrElem(modelPtr)
+	if !isPtr {
+		panic("db.DeleteQB() or db.TxDeleteQB()  arg `modelPtr` must be a ptr, eg: db.DeleteQB(&user, qb) db.TxDeleteQB(tx, &user, qb) ")
+	}
 	if len(qb.Update) == 0 {
 		qb.Update = Map{}
 	}
@@ -188,7 +199,17 @@ func (db *Database) TxDeleteQB(tx *Tx,modelPtr interface{}, qb QB) {
 
 
 func (db *Database) coreDelete(txDB txOrDB, modelPtr interface{}) {
-	id := reflect.ValueOf(modelPtr).Elem().FieldByName("ID").Interface()
+	rValue, isPtr := getPtrElem(modelPtr)
+	if !isPtr {
+		panic("db.Delete() or db.TxDelete()  arg `modelPtr` must be a ptr, eg: db.Delete(&user) db.TxDelete(tx, &user) ")
+	}
+	idValue := rValue.FieldByName("ID")
+	if idValue.IsZero() {
+		panic(errors.New("db.Update(&model) or db.TxUpdate(&model) model.id is zero"))
+	}
+	id := idValue.Interface()
+
+
 	qb := QB{
 		Where: And("id", id),
 	}
@@ -220,33 +241,46 @@ func (db *Database) Update(modelPtr interface{}) {
 func (db *Database) TxUpdate(tx *Tx, modelPtr interface{}) {
 	db.coreUpdate(txOrDB{UseTx: true, Tx: tx.core}, modelPtr)
 }
+func getPtrElem(ptr interface{}) (value reflect.Value, isPtr bool) {
+	v := reflect.ValueOf(ptr)
+	if v.Kind() != reflect.Ptr {
+		isPtr = false
+		return
+	}
+	value = v.Elem()
+	isPtr = true
+	return
+}
 func (db *Database) coreUpdate (txDB txOrDB, modelPtr interface{}) {
-	value := reflect.ValueOf(modelPtr).Elem()
-	reflect.ValueOf(modelPtr).MethodByName("BeforeCreate").Call([]reflect.Value{})
+	rValue, isPtr := getPtrElem(modelPtr)
+	if !isPtr {
+		panic("db.Update() or db.TxUpdate()  arg `modelPtr` must be a ptr, eg: db.Update(&user) db.TxUpdate(tx, &user) ")
+	}
 	typeValue := reflect.TypeOf(modelPtr).Elem()
-	fieldLen := value.NumField()
+	fieldLen := rValue.NumField()
 	updateData := Map{}
 	var id interface{}
 	for i:=0;i<fieldLen;i++{
-		item := value.Field(i)
+		item := rValue.Field(i)
 		itemType := typeValue.Field(i)
 		dbName := itemType.Tag.Get("db")
 		value := item.Interface()
 		if dbName == "id" {
+			if item.IsZero() {
+				panic(errors.New("db.Update(&model) or db.TxUpdate(&model) model.id is zero"))
+			}
 			id = value
 			continue
 		}
 		updateData[dbName] = value
 	}
-	updatedAtValue := value.FieldByName("UpdatedAt")
+	updatedAtValue := rValue.FieldByName("UpdatedAt")
 	if updatedAtValue.IsValid() {
 		updatedAtType, _ := typeValue.FieldByName("UpdatedAt")
 		updateData[updatedAtType.Tag.Get("db")] = time.Now()
 		updatedAtValue.Set(reflect.ValueOf(time.Now()))
 	}
-	if id == nil {
-		panic(errors.New("db.Update(modelPtr) model.id is nil"))
-	}
+
 	query, values := QB{
 		Where: And("id", id),
 		Update: updateData,
@@ -261,7 +295,7 @@ func (db *Database) coreUpdate (txDB txOrDB, modelPtr interface{}) {
 	}
 	lastInsertID, err := result.LastInsertId() ; ge.Check(err)
 	if  lastInsertID != 0 {
-		value.FieldByName("ID").SetInt(lastInsertID)
+		rValue.FieldByName("ID").SetInt(lastInsertID)
 	}
 }
 

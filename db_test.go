@@ -3,6 +3,7 @@ package f_test
 import (
 	"database/sql"
 	_ "database/sql"
+	"errors"
 	f "github.com/og/gofree"
 	ge "github.com/og/x/error"
 	gtime "github.com/og/x/time"
@@ -10,6 +11,9 @@ import (
 	"testing"
 	"time"
 )
+func init () {
+	_= errors.New
+}
 
 type User struct {
 	ID string `db:"id"`
@@ -43,6 +47,47 @@ func TestNewDatabase(t *testing.T) {
 		DB:         "test_gofree",
 	})
 	{
+		func() {
+			defer func() {
+				r := recover()
+				if r == nil {
+					t.Fatal(errors.New("sholud be error"))
+				}
+
+				err := r.(error)
+
+				assert.Equal(t, "db.Update(&model) or db.TxUpdate(&model) model.id is zero", err.Error())
+			}()
+			user := User{}
+			db.Update(&user)
+		}()
+	}
+	{
+		func() {
+			defer func() {
+				r := recover()
+				if r == nil {
+					t.Fatal(errors.New("sholud be error"))
+				}
+
+				err := r.(error)
+
+				assert.Equal(t, "db.Update(&model) or db.TxUpdate(&model) model.id is zero", err.Error())
+			}()
+			user := User{}
+			db.Update(&user)
+		}()
+	}
+	{
+		user := User{
+			ID: "1",
+		}
+		_, err := db.Core.Exec(`delete from ` + user.TableName() + " where id= ?", "1") ; ge.Check(err)
+		user.Name = "nimo"
+		user.IsSuper = false
+		db.Create(&user)
+	}
+	{
 		count := db.CountQB(&User{}, f.QB{
 			Where: f.And("id", "1"),
 		})
@@ -54,7 +99,6 @@ func TestNewDatabase(t *testing.T) {
 		})
 		assert.Equal(t, count, 0)
 	}
-
 	{
 		user := User{}
 		has := false
