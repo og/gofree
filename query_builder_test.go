@@ -117,9 +117,6 @@ func TestQB_Sql(t *testing.T) {
 				{
 					"name": f.OP{f.Eql("nimo")},
 					"age": f.OP{f.Eql(18)},
-				},
-			},
-		}
 		sqlS, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `age` = ? AND `name` = ?", sqlS)
 		assert.Equal(t, []interface {}{18, "nimo"}, values)

@@ -1,17 +1,22 @@
 package f
 
 import (
+	"fmt"
+	gconv "github.com/og/x/conv"
 	ge "github.com/og/x/error"
 	gjson "github.com/og/x/json"
 	glist "github.com/og/x/list"
 	l "github.com/og/x/log"
 	gmap "github.com/og/x/map"
+	grand "github.com/og/x/rand"
+	gtime "github.com/og/x/time"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"regexp"
 	"strings"
+	"time"
 )
 type fileExistKind struct {
 	Exist bool
@@ -112,7 +117,44 @@ func mockFillHelperFunc (mock MockData, helpers map[string]interface{} ,value in
 	}
 	return
 }
-func ResetMockData(db Database, helpers map[string]interface{}, filepath string) (mock MockData, err error) {
+
+var mockDatahelper = Map{
+	"uuid()": func() string {
+		return UUID()
+	},
+	"fromToday()": func(arg ...interface{}) string {
+		dayDiff := ge.GetInt(gconv.StringInt(fmt.Sprintf("%v", arg[0])))
+		return time.Now().AddDate(0, 0, dayDiff).Format(gtime.Day + " 00:00:00")
+	},
+	"formTodayHMS()": func(arg ...interface{}) string {
+		dayDiff := ge.GetInt(gconv.StringInt(fmt.Sprintf("%v", arg[0])))
+		hms := fmt.Sprintf("%s", arg[1])
+		return time.Now().AddDate(0, 0, dayDiff).Format(gtime.Day) + " " + hms
+	},
+	"letter()": func(v interface{}) string {
+		size := ge.GetInt(gconv.StringInt(fmt.Sprintf("%v", v)))
+		return grand.StringLetter(size)
+	},
+	"openid()": func() string {
+		return grand.StringLetter(28)
+	},
+	"unionid()": func() string {
+		return grand.StringLetter(29)
+	},
+}
+
+func ResetMockData(db Database, customHelpers map[string]interface{}, filepath string) (mock MockData, err error) {
+	helpers := map[string]interface{}{}
+	for key, value := range mockDatahelper {
+		helpers[key] = value
+	}
+	for key, value := range customHelpers {
+		if !strings.HasPrefix(key, "x-") {
+			panic(errors.New("customHelpers: key must have x-"))
+		}
+		helpers[key] = value
+	}
+
 	if !strings.HasPrefix(db.GetDataSourceName().DB, "test_") {
 		return mock, errors.New("Danger!!! you try CreateMockData in " + db.GetDataSourceName().DB + ", your code may have errors! (CreateMockData only insert  name like 'test_databasename' database )")
 	}
