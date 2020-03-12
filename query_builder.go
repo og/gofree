@@ -56,8 +56,12 @@ func Or (find  ...[]AND) (andList []AND)   {
 // 接收 ...interface{} 作为参数而不是 map[string]interface{} 是因为会存在这种情况
 // f.And("age", f.Lt(19), "age", f.Gt(10))
 func And(v ...interface{})  []AND {
+	vLen := len(v)
+	if vLen%2 !=0  {
+		panic(errors.New("gofree: f.And(v ...inteface{}) len(v) must be even, may be you forget some."))
+	}
 	and := AND{}
-	for i:=0;i<len(v);i++ {
+	for i:=0;i<vLen;i++ {
 		itemAny := v[i]
 		var item Filter
 		var isKey bool
