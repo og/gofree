@@ -129,6 +129,9 @@ func (db *Database) coreCreate(txDB txOrDB, modelPtr interface{}) {
 		item := value.Field(i)
 		itemType := typeValue.Field(i)
 		dbName := itemType.Tag.Get("db")
+		if dbName == "" {
+			continue
+		}
 		value := item.Interface()
 		insertData[dbName] = value
 	}
