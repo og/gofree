@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/andreyvit/diff"
 	gjson "github.com/og/go-json"
-	ge "github.com/og/x/error"
 	glist "github.com/og/x/list"
 	l "github.com/og/x/log"
 	gmap "github.com/og/x/map"
@@ -13,7 +12,6 @@ import (
 	"log"
 	"os"
 	"reflect"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -404,17 +402,6 @@ func parseWhere (Where []AND, WhereList *glist.StringList, sqlValues *[]interfac
 	if orSqlString != "" {
 		WhereList.Push(orSqlString)
 	}
-}
-
-func logSQL(isDebug bool, sql string, values []interface{}) {
-	replaceRegexp, err := regexp.Compile(`"`);ge.Check(err)
-	removeStartEndRegExp, err := regexp.Compile(`(^\[|\]$)`) ; ge.Check(err)
-	removeValuesRegexp, err := regexp.Compile(`VALUES.*$`) ; ge.Check(err)
-	logDebug(true, Map{
-		"sql": sql,
-		"values": values,
-		"debug sql": removeValuesRegexp.ReplaceAllString(sql, "") + ` VALUES (` + removeStartEndRegExp.ReplaceAllString(replaceRegexp.ReplaceAllString(gjson.String(values), "`"), "") + ")",
-	})
 }
 func logDebug(isDebug bool, data Map) {
 	if !isDebug {

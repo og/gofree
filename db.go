@@ -44,6 +44,7 @@ func (db *Database) coreOneQB(txDB txOrDB, modelPtr Model, has *bool, qb QB) {
 	if !isPtr {
 		panic("db.OneID() or db.OneQB()  arg `modelPtr` must be a ptr")
 	}
+	scanModelMakeSQLSelect(reflect.ValueOf(modelPtr).Elem().Type(), &qb)
 	query, values := qb.BindModel(modelPtr).GetSelect()
 	var row *sqlx.Row
 	if txDB.UseTx {
@@ -96,12 +97,15 @@ func (db *Database) coreCountQB(txDB txOrDB, modelPtr Model, qb QB) (count int) 
 func (db *Database) ListQB(modelListPtr interface{}, qb QB) {
 	db.coreListQB(txOrDB{UseTx: false}, modelListPtr, qb)
 }
-func (db *Database) TxListQB(tx *Tx, modelListPtr interface{}, qb QB) {
+func (db *Database) TxListQB(tx *Tx, modelListPtr []Model, qb QB) {
 	db.coreListQB(txOrDB{UseTx: false, Tx: tx.core}, modelListPtr, qb)
 }
 func (db *Database) coreListQB(txDB txOrDB, modelListPtr interface{}, qb QB) {
-	reflectItemValue := reflect.MakeSlice(reflect.TypeOf(modelListPtr).Elem(), 1,1).Index(0)
-	query, values := qb.BindModel(reflectItemValue.Interface()).GetSelect()
+	elementType := reflect.TypeOf(modelListPtr).Elem()
+	reflectItemValue := reflect.MakeSlice(elementType, 1,1).Index(0)
+	modelInterface := reflectItemValue.Interface()
+	scanModelMakeSQLSelect(reflectItemValue.Type(), &qb)
+	query, values := qb.BindModel(modelInterface).GetSelect()
 	if qb.Table == "" {
 		tableName := reflectItemValue.MethodByName("TableName").Call([]reflect.Value{})[0].String()
 		qb.Table = tableName
@@ -116,7 +120,7 @@ func (db *Database) coreListQB(txDB txOrDB, modelListPtr interface{}, qb QB) {
 	return
 }
 
-func (db *Database) coreCreate(txDB txOrDB, modelPtr interface{}) {
+func (db *Database) coreCreate(txDB txOrDB, modelPtr Model) {
 	value, isPtr := getPtrElem(modelPtr)
 	if !isPtr {
 		panic("db.OneID() or db.OneQB()  arg `modelPtr` must be a ptr")
@@ -166,14 +170,14 @@ func (db *Database) coreCreate(txDB txOrDB, modelPtr interface{}) {
 
 }
 
-func (db *Database) Create(modelPtr interface{}) {
+func (db *Database) Create(modelPtr Model) {
 	db.coreCreate(txOrDB{}, modelPtr)
 }
-func (db *Database) TxCreate(tx *Tx, modelPtr interface{}) {
+func (db *Database) TxCreate(tx *Tx, modelPtr Model) {
 	db.coreCreate(txOrDB{UseTx: true, Tx: tx.core}, modelPtr)
 }
 
-func (db *Database) coreDeleteQB(txDB txOrDB, modelPtr interface{}, qb QB) {
+func (db *Database) coreDeleteQB(txDB txOrDB, modelPtr Model, qb QB) {
 	_, isPtr := getPtrElem(modelPtr)
 	if !isPtr {
 		panic("db.DeleteQB() or db.TxDeleteQB()  arg `modelPtr` must be a ptr, eg: db.DeleteQB(&user, qb) db.TxDeleteQB(tx, &user, qb) ")
@@ -193,15 +197,15 @@ func (db *Database) coreDeleteQB(txDB txOrDB, modelPtr interface{}, qb QB) {
 	}
 	_, err := result.LastInsertId() ; ge.Check(err)
 }
-func (db *Database) DeleteQB(modelPtr interface{}, qb QB) {
+func (db *Database) DeleteQB(modelPtr Model, qb QB) {
 	db.coreDeleteQB(txOrDB{}, modelPtr, qb)
 }
-func (db *Database) TxDeleteQB(tx *Tx,modelPtr interface{}, qb QB) {
+func (db *Database) TxDeleteQB(tx *Tx,modelPtr Model, qb QB) {
 	db.coreDeleteQB(txOrDB{UseTx: true, Tx: tx.core}, modelPtr, qb)
 }
 
 
-func (db *Database) coreDelete(txDB txOrDB, modelPtr interface{}) {
+func (db *Database) coreDelete(txDB txOrDB, modelPtr Model) {
 	rValue, isPtr := getPtrElem(modelPtr)
 	if !isPtr {
 		panic("db.Delete() or db.TxDelete()  arg `modelPtr` must be a ptr, eg: db.Delete(&user) db.TxDelete(tx, &user) ")
@@ -231,17 +235,17 @@ func (db *Database) coreDelete(txDB txOrDB, modelPtr interface{}) {
 	}
 	_, err := result.LastInsertId() ; ge.Check(err)
 }
-func (db *Database) Delete(modelPtr interface{}) {
+func (db *Database) Delete(modelPtr Model) {
 	db.coreDelete(txOrDB{}, modelPtr)
 }
-func (db *Database) TxDelete(tx *Tx,modelPtr interface{}, qb QB) {
+func (db *Database) TxDelete(tx *Tx,modelPtr Model, qb QB) {
 	db.coreDelete(txOrDB{UseTx: true, Tx: tx.core}, modelPtr)
 }
 
-func (db *Database) Update(modelPtr interface{}) {
+func (db *Database) Update(modelPtr Model) {
 	db.coreUpdate(txOrDB{}, modelPtr)
 }
-func (db *Database) TxUpdate(tx *Tx, modelPtr interface{}) {
+func (db *Database) TxUpdate(tx *Tx, modelPtr Model) {
 	db.coreUpdate(txOrDB{UseTx: true, Tx: tx.core}, modelPtr)
 }
 func getPtrElem(ptr interface{}) (value reflect.Value, isPtr bool) {
@@ -254,7 +258,7 @@ func getPtrElem(ptr interface{}) (value reflect.Value, isPtr bool) {
 	isPtr = true
 	return
 }
-func (db *Database) coreUpdate (txDB txOrDB, modelPtr interface{}) {
+func (db *Database) coreUpdate (txDB txOrDB, modelPtr Model) {
 	rValue, isPtr := getPtrElem(modelPtr)
 	if !isPtr {
 		panic("db.Update() or db.TxUpdate()  arg `modelPtr` must be a ptr, eg: db.Update(&user) db.TxUpdate(tx, &user) ")

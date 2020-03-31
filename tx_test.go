@@ -9,7 +9,7 @@ func TestTx(t *testing.T) {
 	db := f.NewDatabase(f.DataSourceName{
 		DriverName: "mysql",
 		User:       "root",
-		Password:   "password",
+		Password:   "somepass",
 		Host:       "localhost",
 		Port:       "3306",
 		DB:         "test_gofree",
@@ -28,8 +28,15 @@ func TestTx(t *testing.T) {
 		}
 	}
 	{
-		user := User{}
+		user := User{
+			ID :"10",
+		}
 		has := false
+		_, err := db.Core.Exec(`delete from ` + user.TableName() + " where id= ?", "10")
+		if err != nil {
+			panic(err)
+		}
+		db.Create(&user)
 		db.TxOneID(tx, &user, &has, "10")
 		user.Name = grand.StringLetter(1)
 		db.TxUpdate(tx, &user)

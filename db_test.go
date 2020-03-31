@@ -29,19 +29,19 @@ const fUserIsSuper = "is_super"
 const fUserCreatedAt = "created_at"
 const fUserUpdatedAt = "updated_at"
 const fUserDeletedAt = "deleted_at"
-func (user User) TableName() string {
+func (User) TableName() string {
 	return "user"
 }
-func (user *User) BeforeCreate () {
-	if user.ID == "" {
-		user.ID = f.UUID()
+func (model *User) BeforeCreate() {
+	if model.ID == "" {
+		model.ID = f.UUID()
 	}
 }
 func TestNewDatabase(t *testing.T) {
 	db := f.NewDatabase(f.DataSourceName{
 		DriverName: "mysql",
 		User:       "root",
-		Password:   "password",
+		Password:   "somepass",
 		Host:       "localhost",
 		Port:       "3306",
 		DB:         "test_gofree",
@@ -141,6 +141,15 @@ func TestNewDatabase(t *testing.T) {
 		assert.Equal(t, has, false)
 	}
 	{
+		_, err := db.Core.Exec(`DELETE FROM user WHERE id = ?`, "2")
+		if err !=nil {
+			panic(err)
+		}
+		db.Create(&User{
+			ID: "2",
+			Name: "nico",
+			IsSuper: true,
+		})
 		userList := []User{}
 		db.ListQB(&userList, f.QB{
 			Where: f.And("id", f.In([]string{"1","2"})),
@@ -215,5 +224,46 @@ func TestNewDatabase(t *testing.T) {
 		assert.Equal(t, userList[0].ID, user.ID)
 		assert.Equal(t, userList[0].Name, "update2")
 		assert.Equal(t, userList[0].UpdatedAt.Format(gtime.Minute), time.Now().Format(gtime.Minute))
+	}
+}
+
+type User2 struct {
+	EventID string
+	ID string `db:"id"`
+	Name string `db:"name"`
+	IsSuper bool `db:"is_super"`
+}
+func (User2) TableName() string {
+	return "user"
+}
+func (model *User2) BeforeCreate(){
+	if model.ID == "" {
+		model.ID = f.UUID()
+	}
+}
+func TestCreateIgnoreField(t *testing.T) {
+	db := f.NewDatabase(f.DataSourceName{
+		DriverName: "mysql",
+		User:       "root",
+		Password:   "somepass",
+		Host:       "localhost",
+		Port:       "3306",
+		DB:         "test_gofree",
+	})
+	user2 := User2{
+		ID: "user2",
+	}
+	_, err := db.Core.Exec(`delete from ` + user2.TableName() + " where id= ?", "user2") ; ge.Check(err)
+	db.Create(&user2)
+	newUser := User2{}
+	has := false
+	db.OneID(&newUser, &has, "user2")
+	assert.Equal(t, has, true)
+	assert.Equal(t, newUser.ID, "user2")
+	{
+		// 正常情况下这个不应该报错
+		db.ListQB(&[]User2{}, f.QB{
+			Check: []string{"SELECT `id`, `name`, `is_super` FROM `user` WHERE `deleted_at` IS NULL"},
+		})
 	}
 }
