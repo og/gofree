@@ -167,7 +167,7 @@ func ResetMockData(db Database, customHelpers map[string]interface{}, filepath s
 	for tableName, item := range mock.Table {
 		_, err = db.Core.Exec("truncate table `" + tableName + "`"); ge.Check(err)
 		for _, row := range item {
-			isCommentRow := glist.StringList{gmap.Keys(row).String()}.Every(func(index int, key string) bool {
+			isCommentRow := glist.StringList{gmap.UnsafeKeys(row).String()}.Every(func(index int, key string) bool {
 				if strings.HasPrefix(key, "#") {
 					delete(row, key)
 				}

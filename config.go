@@ -44,7 +44,7 @@ func (config DataSourceName) GetString() (dataSourceName string) {
 
 	configList = append(configList)
 	var UserList glist.StringList
-	for _, key := range gmap.Keys(config.Query).String() {
+	for _, key := range gmap.StringStringKeys(config.Query) {
 		value := config.Query[key]
 		UserList.Push(key +"="+value)
 	}

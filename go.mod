@@ -10,8 +10,8 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/mediocregopher/radix/v3 v3.4.2 // indirect
 	github.com/og/go-json v0.0.0-20190910100036-3eb9c488b296
-	github.com/og/x v0.0.0-20200227084821-bd39b56f0169
-	github.com/og/x/json v0.0.0-20200227084821-bd39b56f0169
+	github.com/og/x v0.0.0-20200331030407-867845654bb6
+	github.com/og/x/json v0.0.0-20200328105910-6c65c720db7e
 	github.com/pkg/errors v0.8.1
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/stretchr/testify v1.4.0

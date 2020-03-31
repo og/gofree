@@ -130,7 +130,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			sqlList.Push("UPDATE")
 			sqlList.Push(tableName)
 			sqlList.Push("SET")
-			keys := gmap.Keys(qb.Update).String()
+			keys := gmap.UnsafeKeys(qb.Update).String()
 			if len(keys) == 0 {
 				panic(errors.New("gofree: update can not be a empty map"))
 			}
@@ -146,7 +146,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 		case "INSERT":
 			sqlList.Push("INSERT INTO")
 			sqlList.Push(tableName)
-			keys := gmap.Keys(qb.Insert).String()
+			keys := gmap.UnsafeKeys(qb.Insert).String()
 			if len(keys) == 0 {
 				panic(errors.New("gofree: Insert can not be a empty map"))
 			}
@@ -206,7 +206,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			orderASCList := glist.StringList{}
 			orderDESCList := glist.StringList{}
 			firstType := ""
-			for _, field := range gmap.Keys(qb.Order).String() {
+			for _, field := range gmap.UnsafeKeys(qb.Order).String() {
 				orderType := qb.Order[field]
 				switch  orderType {
 				case ASC:
@@ -390,7 +390,7 @@ func parseWhere (Where []AND, WhereList *glist.StringList, sqlValues *[]interfac
 	var orSqlList glist.StringList
 	for _, and := range Where {
 		var andList glist.StringList
-		for _, field  := range gmap.Keys(and).String() {
+		for _, field  := range gmap.UnsafeKeys(and).String() {
 			op := and[field]
 			parseAnd(field, op, &andList, sqlValues)
 		}
