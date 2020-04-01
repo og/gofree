@@ -123,16 +123,16 @@ var mockDatahelper = Map{
 		return UUID()
 	},
 	"fromToday()": func(arg ...interface{}) string {
-		dayDiff := ge.GetInt(gconv.StringInt(fmt.Sprintf("%v", arg[0])))
+		dayDiff := ge.Int(gconv.StringInt(fmt.Sprintf("%v", arg[0])))
 		return time.Now().AddDate(0, 0, dayDiff).Format(gtime.Day + " 00:00:00")
 	},
 	"formTodayHMS()": func(arg ...interface{}) string {
-		dayDiff := ge.GetInt(gconv.StringInt(fmt.Sprintf("%v", arg[0])))
+		dayDiff := ge.Int(gconv.StringInt(fmt.Sprintf("%v", arg[0])))
 		hms := fmt.Sprintf("%s", arg[1])
 		return time.Now().AddDate(0, 0, dayDiff).Format(gtime.Day) + " " + hms
 	},
 	"letter()": func(v interface{}) string {
-		size := ge.GetInt(gconv.StringInt(fmt.Sprintf("%v", v)))
+		size := ge.Int(gconv.StringInt(fmt.Sprintf("%v", v)))
 		return grand.StringLetter(size)
 	},
 	"openid()": func() string {

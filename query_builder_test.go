@@ -200,7 +200,7 @@ func TestQB_Sql(t *testing.T) {
 					"age", f.Lt(18),
 					"age", f.Gt(19),
 				),
-				f.And("created_at", f.Day(ge.GetTime(time.Parse(gtime.Second, "2018-11-11 00:11:11")))),
+				f.And("created_at", f.Day(ge.Time(time.Parse(gtime.Second, "2018-11-11 00:11:11")))),
 			) ,
 		}
 		sqlS, values := qb.GetSelect()
@@ -367,7 +367,7 @@ func TestQB_Sql(t *testing.T) {
 			Where: []f.AND{
 				{
 					"time": f.OP{
-						f.Day(ge.GetTime(time.Parse(gtime.Second, "2018-11-11 00:11:11"))),
+						f.Day(ge.Time(time.Parse(gtime.Second, "2018-11-11 00:11:11"))),
 					},
 				},
 			},

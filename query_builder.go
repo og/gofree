@@ -3,7 +3,7 @@ package f
 import (
 	"fmt"
 	"github.com/andreyvit/diff"
-	gjson "github.com/og/go-json"
+	gjson "github.com/og/x/json"
 	glist "github.com/og/x/list"
 	l "github.com/og/x/log"
 	gmap "github.com/og/x/map"
