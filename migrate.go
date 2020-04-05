@@ -127,7 +127,7 @@ func (al Alter) Modify(migrateField MigrateField) Alter {
 	al.migrateField = migrateField
 	return al
 }
-func (Migrate) Table(tableName string) Alter {
+func (Migrate) AlterTable(tableName string) Alter {
 	return Alter {
 		tableName: tableName,
 	}
