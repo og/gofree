@@ -14,6 +14,9 @@ type Database struct {
 	Core *sqlx.DB
 	onlyReadDataSourceName DataSourceName
 }
+func (database Database) Close() {
+	ge.Check(database.Core.Close())
+}
 func (database Database) GetDataSourceName () DataSourceName {
 	return database.onlyReadDataSourceName
 }
