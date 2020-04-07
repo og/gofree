@@ -744,4 +744,31 @@ func TestQB_Sql(t *testing.T) {
 		assert.Equal(t, "SELECT * FROM `user` WHERE `month` >= ? AND `month` <= ? AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{"2019-11", "2020-02"}, values)
 	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"age", f.BetweenInt(18, 65),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` BETWEEN ? AND ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{18,65}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"age", f.BetweenFloat(float64(10)/3, float64(20)/3),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` BETWEEN ? AND ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{3.3333333333333335,6.666666666666667}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"age", f.BetweenString("nimo", "nimoz"),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` BETWEEN ? AND ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"nimo","nimoz"}, values)
+	}
 }

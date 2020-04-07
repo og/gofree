@@ -373,7 +373,30 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 			fieldSymbolCondition.Push("AND")
 			fieldSymbolCondition.Push(wrapField(field) + " <= ?")
 			*sqlValues = append(*sqlValues, valueTime.End.Format(filter.TimeRange.SQLValueLayout))
-
+		case dict.BetweenInt:
+			fieldSymbolCondition.Push(wrapField(field), "BETWEEN", "?", "AND" , "?")
+			valueList := []interface{}{
+				filter.BetweenInt.Begin,
+				filter.BetweenInt.End,
+			}
+			*sqlValues = append(*sqlValues, valueList...)
+			break
+		case dict.BetweenFloat:
+			fieldSymbolCondition.Push(wrapField(field), "BETWEEN", "?", "AND" , "?")
+			valueList := []interface{}{
+				filter.BetweenFloat.Begin,
+				filter.BetweenFloat.End,
+			}
+			*sqlValues = append(*sqlValues, valueList...)
+			break
+		case dict.BetweenString:
+			fieldSymbolCondition.Push(wrapField(field), "BETWEEN", "?", "AND" , "?")
+			valueList := []interface{}{
+				filter.BetweenString.Begin,
+				filter.BetweenString.End,
+			}
+			*sqlValues = append(*sqlValues, valueList...)
+			break
 		default:
 			fieldSymbolCondition.Push(wrapField(field), filter.Symbol)
 			fieldSymbolCondition.Push("?")

@@ -17,6 +17,18 @@ type Filter struct {
 	CustomSQL string
 	TimeValue time.Time
 	TimeRange FilterTimeRange
+	BetweenInt struct{
+		Begin int
+		End int
+	}
+	BetweenFloat struct{
+		Begin float64
+		End float64
+	}
+	BetweenString struct{
+		Begin string
+		End string
+	}
 }
 type FilterTimeRange struct {
 	Range  gtime.Range
@@ -37,6 +49,9 @@ func (self Filter) Dict () (dict struct {
 		Like string
 		GofreeIgnore string
 		TimeRange string
+		BetweenInt string
+		BetweenFloat string
+		BetweenString string
 	}
 }) {
 	dict.Kind.Day = "Day"
@@ -50,6 +65,9 @@ func (self Filter) Dict () (dict struct {
 	dict.Kind.Like = "LIKE"
 	dict.Kind.GofreeIgnore = "GofreeIgnore"
 	dict.Kind.TimeRange = "TimeRange"
+	dict.Kind.BetweenInt = "BetweenInt"
+	dict.Kind.BetweenFloat = "BetweenFloat"
+	dict.Kind.BetweenString = "BetweenString"
 	return
 }
 
@@ -89,6 +107,38 @@ func GtEql(v interface{}) Filter {
 		Value: v,
 		Symbol: ">=",
 	}
+}
+func BetweenInt(begin int, end int) Filter {
+	return Filter{
+		BetweenInt: struct {
+			Begin int
+			End   int
+		}{Begin: begin, End: end},
+		Kind: Filter{}.Dict().Kind.BetweenInt,
+	}
+}
+func BetweenFloat(begin float64, end float64) Filter {
+	return Filter{
+		BetweenFloat: struct {
+			Begin float64
+			End   float64
+		}{Begin: begin, End: end},
+		Kind: Filter{}.Dict().Kind.BetweenFloat,
+	}
+}
+func BetweenString(begin string, end string) Filter {
+	return Filter{
+		BetweenString: struct {
+			Begin string
+			End   string
+		}{Begin: begin, End: end},
+		Kind: Filter{}.Dict().Kind.BetweenString,
+	}
+}
+type nonSupportBetweenTime string
+// you can use f.TimeRange, not BetweenTime
+func BetweenTime(v nonSupportBetweenTime) {
+
 }
 func Like(v interface{}) Filter {
 	return Filter{
