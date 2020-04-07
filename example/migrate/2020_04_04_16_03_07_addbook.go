@@ -7,7 +7,7 @@ func Migrate2020_04_04_16_03_07_addbook(mi f.Migrate) {
 	/****/ mi.MigrateName("2020_04_04_16_03_07_addbook") /****/
 	// Do not change or remove this code End
 
-	mi.Table("user").Modify(mi.Field("name").Varchar(20))
+	mi.AlterTable("user").Modify(mi.Field("name").Varchar(20))
 	// ALTER  TABLE `user` MODIFY  COLUMN `name`  varchat(20);
 
 	mi.CreateTable(f.CreateTableInfo{
