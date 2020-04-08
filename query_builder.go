@@ -18,7 +18,7 @@ import (
 type Order struct {
 	// Field Type 的顺序永远不能换
 	Field string
-	Type string
+	Type orderType
 }
 type Group struct {
 	Field string

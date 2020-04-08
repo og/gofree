@@ -215,8 +215,11 @@ func ignoreFilter () Filter {
 		Kind: Filter{}.Dict().Kind.GofreeIgnore,
 	}
 }
-const DESC = "DESC"
-const ASC = "ASC"
+type orderType uint8
+const (
+	DESC orderType = iota
+	ASC
+)
 
 // 在查询中有一种常见的场景，当某个请求参数为空时不增加 where。
 // 比如用户搜索姓名, ?name=nimo 时SQL是 WHERE name = ? 。
