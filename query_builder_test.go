@@ -399,9 +399,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Order: f.Map{
-				"name" : f.DESC,
-			},
+			Order: []f.Order{ {"name", f.DESC} },
 		}
 		sqlS, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` ORDER BY `name` DESC", sqlS)
@@ -410,37 +408,28 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Order: f.Map{
-				"name" : f.DESC,
-				"age" : f.DESC,
-			},
+			Order: []f.Order{ {"name", f.DESC},{"age", f.DESC} },
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` ORDER BY `age`, `name` DESC", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` ORDER BY `name` DESC, `age` DESC", sqlS)
 		assert.Equal(t, []interface {}(nil), values)
 	}
 	{
 		qb := f.QB{
 			Table: "user",
-			Order: f.Map{
-				"name" : f.DESC,
-				"age" : f.ASC,
-			},
+			Order: []f.Order{ {"name", f.DESC},{"age", f.ASC} },
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` ORDER BY `age` ASC, `name` DESC", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` ORDER BY `name` DESC, `age` ASC", sqlS)
 		assert.Equal(t, []interface {}(nil), values)
 	}
 	{
 		qb := f.QB{
 			Table: "user",
-			Order: f.Map{
-				"name" : f.ASC,
-				"age" : f.DESC,
-			},
+			Order: []f.Order{ {"name", f.ASC},{"age", f.DESC} },
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` ORDER BY `age` DESC, `name` ASC", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` ORDER BY `name` ASC, `age` DESC", sqlS)
 		assert.Equal(t, []interface {}(nil), values)
 	}
 	{
@@ -492,9 +481,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Order: f.Map{
-				"name" : f.ASC,
-			},
+			Order: []f.Order{{"name" , f.ASC}},
 			SoftDelete: "deleted_at",
 		}
 		sql, values := qb.GetSelect()
@@ -504,9 +491,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Order: f.Map{
-				"name" : f.ASC,
-			},
+			Order: []f.Order{{"name" , f.ASC}},
 			SoftDelete: "deleted_at",
 			Limit: 1,
 		}
@@ -517,9 +502,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Order: f.Map{
-				"name" : f.ASC,
-			},
+			Order: []f.Order{{"name" , f.ASC}},
 			SoftDelete: "deleted_at",
 			Offset: 1,
 		}
@@ -697,8 +680,8 @@ func TestQB_Sql(t *testing.T) {
 			Where: f.And(
 				"create_at", f.TimeRange(gtime.Range{
 					Type:  gtime.Range{}.Dict().Type.Day,
-					Start: gtime.Parse(gtime.Day, "2019-11-11"),
-					End:  gtime.Parse(gtime.Day, "2019-11-23"),
+					Start: gtime.ParseChina(gtime.Day, "2019-11-11"),
+					End:  gtime.ParseChina(gtime.Day, "2019-11-23"),
 				}, gtime.Second),
 			),
 		}.BindModel(&User{}).GetSelect()
@@ -710,8 +693,8 @@ func TestQB_Sql(t *testing.T) {
 			Where: f.And(
 				"date", f.TimeRange(gtime.Range{
 					Type:  gtime.Range{}.Dict().Type.Day,
-					Start: gtime.Parse(gtime.Day, "2019-11-11"),
-					End:  gtime.Parse(gtime.Day, "2019-11-23"),
+					Start: gtime.ParseChina(gtime.Day, "2019-11-11"),
+					End:  gtime.ParseChina(gtime.Day, "2019-11-23"),
 				}, gtime.Day),
 			),
 		}.BindModel(&User{}).GetSelect()
@@ -723,8 +706,8 @@ func TestQB_Sql(t *testing.T) {
 			Where: f.And(
 				"date", f.TimeRange(gtime.Range{
 					Type:  gtime.Range{}.Dict().Type.Month,
-					Start: gtime.Parse(gtime.Month, "2019-11"),
-					End:  gtime.Parse(gtime.Month, "2020-02"),
+					Start: gtime.ParseChina(gtime.Month, "2019-11"),
+					End:  gtime.ParseChina(gtime.Month, "2020-02"),
 				}, gtime.Day),
 			),
 		}.BindModel(&User{}).GetSelect()
@@ -736,8 +719,8 @@ func TestQB_Sql(t *testing.T) {
 			Where: f.And(
 				"month", f.TimeRange(gtime.Range{
 					Type:  gtime.Range{}.Dict().Type.Month,
-					Start: gtime.Parse(gtime.Month, "2019-11"),
-					End:  gtime.Parse(gtime.Month, "2020-02"),
+					Start: gtime.ParseChina(gtime.Month, "2019-11"),
+					End:  gtime.ParseChina(gtime.Month, "2020-02"),
 				}, gtime.Month),
 			),
 		}.BindModel(&User{}).GetSelect()

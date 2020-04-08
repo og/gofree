@@ -16,8 +16,9 @@ import (
 	"time"
 )
 type Order struct {
-	Type string
+	// Field Type 的顺序永远不能换
 	Field string
+	Type string
 }
 type Group struct {
 	Field string
@@ -28,7 +29,7 @@ type QB struct {
 	Where []AND
 	Offset int
 	Limit int
-	Order Map
+	Order []Order
 	Group []string
 	SoftDelete string
 	Insert Map
@@ -201,34 +202,15 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 		// order by
 		if len(qb.Order) != 0 {
 			sqlList.Push("ORDER BY")
-			orderASCList := glist.StringList{}
-			orderDESCList := glist.StringList{}
-			firstType := ""
-			for _, field := range gmap.UnsafeKeys(qb.Order).String() {
-				orderType := qb.Order[field]
+			orderList := glist.StringList{}
+			for _, orderItem := range qb.Order {
+				orderType := orderItem.Type
 				switch  orderType {
 				case ASC:
-					if firstType == "" {
-						firstType = "ASC"
-					}
-					orderASCList.Push(wrapField(field))
+					orderList.Push(wrapField(orderItem.Field) +" ASC")
 				case DESC:
-					if firstType == "" {
-						firstType = "DESC"
-					}
-					orderDESCList.Push(wrapField(field))
+					orderList.Push(wrapField(orderItem.Field)+" DESC")
 				}
-				orderASCList.Join(",")
-			}
-
-			orderList := glist.StringList{}
-			switch firstType {
-			case ASC:
-				if len(orderASCList.Value) != 0 { orderList.Push(orderASCList.Join(", ") + " " + "ASC") }
-				if len(orderDESCList.Value) != 0 { orderList.Push(orderDESCList.Join(", ") + " " + "DESC") }
-			case DESC:
-				if len(orderDESCList.Value) != 0 { orderList.Push(orderDESCList.Join(", ") + " " + "DESC") }
-				if len(orderASCList.Value) != 0 { orderList.Push(orderASCList.Join(", ") + " " + "ASC") }
 			}
 			sqlList.Push(orderList.Join(", "))
 		}
