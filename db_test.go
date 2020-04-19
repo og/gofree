@@ -37,8 +37,8 @@ func (model *User) BeforeCreate() {
 		model.ID = f.UUID()
 	}
 }
-func TestNewDatabase(t *testing.T) {
-	db := f.NewDatabase(f.DataSourceName{
+func NewDB() f.Database {
+	return f.NewDatabase(f.DataSourceName{
 		DriverName: "mysql",
 		User:       "root",
 		Password:   "somepass",
@@ -46,6 +46,9 @@ func TestNewDatabase(t *testing.T) {
 		Port:       "3306",
 		DB:         "test_gofree",
 	})
+}
+func TestNewDatabase(t *testing.T) {
+	db := NewDB()
 	{
 		func() {
 			defer func() {
