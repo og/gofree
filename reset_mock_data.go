@@ -160,7 +160,7 @@ func ResetMockData(db Database, customHelpers map[string]interface{}, filepath s
 	}
 	byteList, err := ioutil.ReadFile(filepath)
 	if err != nil { return }
-	gjson.ParseByte(byteList, &mock)
+	gjson.ParseBytes(byteList, &mock)
 	if mock.Local == nil {
 		mock.Local = map[string]interface{}{}
 	}
