@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/og/x/error"
-	"github.com/og/x/list"
 	"reflect"
 	"regexp"
 )
@@ -29,11 +28,10 @@ func ResetAndMock(db Database, mock Mock) {
 		tableValue := checkAndReturnTable(table)
 		mockTruncateTable(db, tableValue, existTruncateTableName)
 		// truncate table
-		glist.Run(tableValue.Len(), func(index int) (_break bool) {
+		for index := 0;index< tableValue.Len();index ++ {
 			model := tableValue.Index(index).Addr().Interface()
 			db.Create(model.(Model))
-			return
-		})
+		}
 	}
 }
 func checkAndReturnTable(table interface{}) (tableValue reflect.Value){
