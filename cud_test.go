@@ -2,7 +2,7 @@ package f_test
 
 import (
 	f "github.com/og/gofree"
-	"log"
+	gtest "github.com/og/x/test"
 	"testing"
 )
 type IDOption string
@@ -15,24 +15,16 @@ type OptionDTO struct {
 	Name string
 	IsCreate bool
 }
-func TestCUD(t *testing.T) {
-	updateOptionList := []Option{}
-	createOptionList := []Option{}
-	deleteIDList := []IDOption{}
-	databaseOptionList := []Option{
-		{ID: IDOption("1"), Name:"a",},
-		{ID: IDOption("2"), Name:"b",},
-		{ID: IDOption("3"), Name:"c",},
-	}
-	requestOptionList := []OptionDTO{
-		// 删 1
-		// 改 2 3
-		{ID:IDOption("2"),Name:"bb"},
-		{ID:IDOption("3"),Name:"bb"},
-		// 增 4
-		{Name:"dd", IsCreate: true},
-	}
-	cudOutput := f.CUD(f.CUDData{
+type optionCUDOutout struct {
+	UpdateOptionList []Option
+	CreateOptionList []Option
+	DeleteIDList []IDOption
+}
+func optionCUD (databaseOptionList []Option, requestOptionList []OptionDTO) (output optionCUDOutout) {
+	output.DeleteIDList = []IDOption{}
+	output.CreateOptionList = []Option{}
+	output.UpdateOptionList = []Option{}
+	cudOutput := f.CUD(f.CUDIDList{
 		ExistIDList:  func() (idList []string){
 			for _,option := range databaseOptionList {
 				idList = append(idList, string(option.ID))
@@ -42,11 +34,11 @@ func TestCUD(t *testing.T) {
 		UpdateIDList: func() (idList []string) {
 			for _,option := range requestOptionList {
 				if option.IsCreate {
-					createOptionList = append(createOptionList, Option{
+					output.CreateOptionList = append(output.CreateOptionList, Option{
 						Name: option.Name,
 					})
 				} else {
-					updateOptionList = append(updateOptionList, Option{
+					output.UpdateOptionList = append(output.UpdateOptionList, Option{
 						ID:   option.ID,
 						Name: option.Name,
 					})
@@ -57,9 +49,145 @@ func TestCUD(t *testing.T) {
 		}(),
 	})
 	for _,deleteID :=  range cudOutput.DeleteIDList {
-		deleteIDList = append(deleteIDList, IDOption(deleteID))
+		output.DeleteIDList = append(output.DeleteIDList, IDOption(deleteID))
 	}
-	log.Print("updateOptionList", updateOptionList)
-	log.Print("createOptionList", createOptionList)
-	log.Print("deleteIDList", deleteIDList)
+	return
+}
+func TestCUD(t *testing.T) {
+	as := gtest.NewAS(t)
+	// cud
+	{
+		out := optionCUD([]Option{
+			{ID: IDOption("1"), Name:"a",},
+			{ID: IDOption("2"), Name:"b",},
+			{ID: IDOption("3"), Name:"c",},
+		}, []OptionDTO{
+			// 删 1
+			// 改 2 3
+			{ID:IDOption("2"),Name:"bb"},
+			{ID:IDOption("3"),Name:"cc"},
+			// 增 4
+			{Name:"dd", IsCreate: true},
+		})
+		as.Equal(out.UpdateOptionList, []Option{
+			{IDOption("2"), "bb",},
+			{IDOption("3"), "cc",},
+		})
+		as.Equal(out.CreateOptionList, []Option{
+			{IDOption(""), "dd",},
+		})
+		as.Equal(out.DeleteIDList, []IDOption{
+			IDOption("1"),
+		})
+	}
+	// only delete
+	{
+		out := optionCUD([]Option{
+			{ID: IDOption("1"), Name:"a",},
+			{ID: IDOption("2"), Name:"b",},
+			{ID: IDOption("3"), Name:"c",},
+		}, []OptionDTO{
+
+		})
+		as.Equal(out.UpdateOptionList, []Option{
+
+		})
+		as.Equal(out.CreateOptionList, []Option{
+
+		})
+		as.Equal(out.DeleteIDList, []IDOption{
+			IDOption("1"),IDOption("2"),IDOption("3"),
+		})
+	}
+	// only update
+	{
+		out := optionCUD([]Option{
+			{ID: IDOption("1"), Name:"a",},
+			{ID: IDOption("2"), Name:"b",},
+			{ID: IDOption("3"), Name:"c",},
+		}, []OptionDTO{
+			{ID: IDOption("1"), Name:"aa",},
+			{ID: IDOption("2"), Name:"bb",},
+			{ID: IDOption("3"), Name:"cc",},
+		})
+		as.Equal(out.UpdateOptionList, []Option{
+			{IDOption("1"), "aa",},
+			{IDOption("2"), "bb",},
+			{IDOption("3"), "cc",},
+		})
+		as.Equal(out.CreateOptionList, []Option{
+
+		})
+		as.Equal(out.DeleteIDList, []IDOption{
+
+		})
+	}
+	// only create
+	{
+		out := optionCUD([]Option{
+
+		}, []OptionDTO{
+			{Name:"a",IsCreate: true,},
+			{Name:"b",IsCreate: true,},
+			{Name:"c",IsCreate: true,},
+		})
+		as.Equal(out.UpdateOptionList, []Option{
+
+		})
+		as.Equal(out.CreateOptionList, []Option{
+			{Name:"a",},
+			{Name:"b",},
+			{Name:"c",},
+		})
+		as.Equal(out.DeleteIDList, []IDOption{
+
+		})
+	}
+	// delete create
+	{
+		out := optionCUD([]Option{
+			{ID: IDOption("1"), Name:"a",},
+			{ID: IDOption("2"), Name:"b",},
+			{ID: IDOption("3"), Name:"c",},
+		}, []OptionDTO{
+			{Name:"e",IsCreate: true,},
+			{Name:"d",IsCreate: true,},
+		})
+		as.Equal(out.UpdateOptionList, []Option{
+
+		})
+		as.Equal(out.CreateOptionList, []Option{
+			{Name:"e",},
+			{Name:"d",},
+		})
+		as.Equal(out.DeleteIDList, []IDOption{
+			IDOption("1"),IDOption("2"),IDOption("3"),
+		})
+	}
+	// update create
+	{
+		out := optionCUD([]Option{
+			{ID: IDOption("1"), Name:"a",},
+			{ID: IDOption("2"), Name:"b",},
+			{ID: IDOption("3"), Name:"c",},
+		}, []OptionDTO{
+			{ID: IDOption("1"), Name:"aa",},
+			{ID: IDOption("2"), Name:"bb",},
+			{ID: IDOption("3"), Name:"cc",},
+			{Name:"e",IsCreate: true,},
+			{Name:"d",IsCreate: true,},
+		})
+		as.Equal(out.UpdateOptionList, []Option{
+			{IDOption("1"), "aa",},
+			{IDOption("2"), "bb",},
+			{IDOption("3"), "cc",},
+		})
+		as.Equal(out.CreateOptionList, []Option{
+			{Name:"e",},
+			{Name:"d",},
+		})
+		as.Equal(out.DeleteIDList, []IDOption{
+
+		})
+	}
 }

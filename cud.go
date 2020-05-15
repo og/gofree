@@ -1,13 +1,13 @@
 package f
 
-type CUDData struct {
+type CUDIDList struct {
 	ExistIDList []string
 	UpdateIDList []string
 }
-type CUDOutput struct {
+type CUDInfo struct {
 	DeleteIDList []string
 }
-func CUD(data CUDData) (output CUDOutput) {
+func CUD(data CUDIDList) (output CUDInfo) {
 	updateIDMap := map[string/* id */]bool{}
 	for _, updateID := range data.UpdateIDList {
 		updateIDMap[updateID] = true

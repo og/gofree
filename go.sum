@@ -86,6 +86,8 @@ github.com/og/x v0.0.0-20200331155458-12588cd748fa h1:ZvncTHeBEFt+1HO2LmeTGy39jt
 github.com/og/x v0.0.0-20200331155458-12588cd748fa/go.mod h1:FCkdxiGT08CmLFFLnZhFhsgPBBkv4lQ1lU7XyzTunQg=
 github.com/og/x v0.0.0-20200407164412-fe1d056701e0 h1:xj4N3Om6AXgm0J9bypLtzluxum2TmaZKSdq5KE7jsXU=
 github.com/og/x v0.0.0-20200407164412-fe1d056701e0/go.mod h1:FCkdxiGT08CmLFFLnZhFhsgPBBkv4lQ1lU7XyzTunQg=
+github.com/og/x v0.0.0-20200508064944-2ad6048904ab h1:ZZC75KWQNpL05hjRobeFeRic/mjg6ecvFPGMkXxKkgQ=
+github.com/og/x v0.0.0-20200508064944-2ad6048904ab/go.mod h1:FCkdxiGT08CmLFFLnZhFhsgPBBkv4lQ1lU7XyzTunQg=
 github.com/og/x/json v0.0.0-20190911074324-46c1b3e856fb h1:kSrSKYC6DFpQ1PcPO71Y+T09O74ajhLW/Zen8t4pdvc=
 github.com/og/x/json v0.0.0-20190911074324-46c1b3e856fb/go.mod h1:bZrrjE/DSoVtxVFWtDHU1BD82zwiheYZSSjCFWHEm70=
 github.com/og/x/json v0.0.0-20200227084821-bd39b56f0169 h1:+SpVh5FGDApb8AAvmMBFGiVjUNu3r2uXp8sWanK/0Co=
