@@ -51,7 +51,7 @@ func Or (find  ...[]AND) (andList []AND)   {
 	}
 	return
 }
-func WhereAnd(v ...interface{}) QB {
+func Where(v ...interface{}) QB {
 	return QB{
 		Where: And(v...),
 	}
