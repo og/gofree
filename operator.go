@@ -210,7 +210,7 @@ func Day(v time.Time) Filter{
 
 
 
-func ignoreFilter () Filter {
+func IgnoreFilter () Filter {
 	return Filter{
 		Kind: Filter{}.Dict().Kind.GofreeIgnore,
 	}
@@ -250,7 +250,7 @@ func IgnoreEmpty(filterFunc FilterFunc, query string) Filter {
 */
 func IgnorePattern(filterFunc FilterFunc, query string, pattern string) Filter {
 	if query == pattern {
-		return ignoreFilter()
+		return IgnoreFilter()
 	} else {
 		return filterFunc(query)
 	}
@@ -268,7 +268,7 @@ func IgnorePattern(filterFunc FilterFunc, query string, pattern string) Filter {
 */
 func Ignore(filter Filter, ignoreCondition bool)  Filter {
 	if ignoreCondition {
-		return ignoreFilter()
+		return IgnoreFilter()
 	} else {
 		return filter
 	}
