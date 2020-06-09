@@ -3,6 +3,7 @@ package f_test
 import (
 	f "github.com/og/gofree"
 	ge "github.com/og/x/error"
+	gtest "github.com/og/x/test"
 	gtime "github.com/og/x/time"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -11,7 +12,7 @@ import (
 
 
 func TestQB_Sql(t *testing.T) {
-
+	as := gtest.NewAS(t)
 	{
 		qb := f.QB{
 			Table: "user",
@@ -785,4 +786,14 @@ func TestQB_Sql(t *testing.T) {
 		assert.Equal(t, "SELECT * FROM `goods` WHERE `age` = ?", sql)
 		assert.Equal(t, []interface{}{1}, values)
 	}
+	as.PanicErrorString("f.Filter is empty struct", func() {
+		sql, values := f.QB{
+			Table: "goods",
+			Where: f.And(
+				"age", f.Filter{},
+			),
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `goods`", sql)
+		assert.Equal(t, []interface{}(nil), values)
+	})
 }

@@ -1,6 +1,7 @@
 package f
 
 import (
+	"errors"
 	"fmt"
 	"github.com/andreyvit/diff"
 	gjson "github.com/og/x/json"
@@ -8,7 +9,6 @@ import (
 	l "github.com/og/x/log"
 	gmap "github.com/og/x/map"
 	gtime "github.com/og/x/time"
-	"github.com/pkg/errors"
 	"log"
 	"os"
 	"reflect"
@@ -385,6 +385,9 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 			*sqlValues = append(*sqlValues, valueList...)
 			break
 		default:
+			if filter.Symbol == "" {
+				panic(errors.New("f.Filter is empty struct"))
+			}
 			fieldSymbolCondition.Push(wrapField(field), filter.Symbol)
 			fieldSymbolCondition.Push("?")
 			*sqlValues = append(*sqlValues, filter.Value)
