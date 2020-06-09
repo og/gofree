@@ -754,4 +754,35 @@ func TestQB_Sql(t *testing.T) {
 		assert.Equal(t, "SELECT * FROM `user` WHERE `age` BETWEEN ? AND ? AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{"nimo","nimoz"}, values)
 	}
+	{
+		sql, values := f.QB{
+			Table: "goods",
+			Where: f.And(
+				"saleCount", f.Custom("= `inventory`"),
+			),
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `goods` WHERE `saleCount` = `inventory`", sql)
+		assert.Equal(t, []interface{}(nil), values)
+	}
+	{
+		sql, values := f.QB{
+			Table: "goods",
+			Where: f.And(
+				"saleCount", f.IgnoreFilter(),
+			),
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `goods`", sql)
+		assert.Equal(t, []interface{}(nil), values)
+	}
+	{
+		sql, values := f.QB{
+			Table: "goods",
+			Where: f.And(
+				"age", f.Eql(1),
+				"saleCount", f.IgnoreFilter(),
+			),
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `goods` WHERE `age` = ?", sql)
+		assert.Equal(t, []interface{}{1}, values)
+	}
 }
