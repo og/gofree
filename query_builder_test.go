@@ -613,4 +613,206 @@ func TestQB_Sql(t *testing.T) {
 		assert.Equal(t, "SELECT * FROM `user` WHERE `id` = ? AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{1}, values)
 	}
+	{
+		{
+			sql, values := f.QB{
+				Table: "user",
+				Where: f.And("title", f.IgnoreEmpty(f.Eql, "")),
+			}.GetSelect()
+			assert.Equal(t, "SELECT * FROM `user`", sql)
+			assert.Equal(t, []interface {}(nil), values)
+		}
+		{
+			sql, values := f.QB{
+				Where: f.And("title", f.IgnoreEmpty(f.Eql, "")),
+			}.BindModel(&User{}).GetSelect()
+			assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL", sql)
+			assert.Equal(t, []interface {}(nil), values)
+		}
+		{
+			sql, values := f.QB{
+				Where: f.And("title", "abc"),
+			}.BindModel(&User{}).GetSelect()
+			assert.Equal(t, "SELECT * FROM `user` WHERE `title` = ? AND `deleted_at` IS NULL", sql)
+			assert.Equal(t, []interface{}{"abc"}, values)
+		}
+	}
+	{
+		status := "all"
+		sql, values := f.QB{
+			Where: f.And(
+				"status", f.IgnorePattern(f.Eql, status, "all"),
+				"gift_id", f.In([]string{"1","2"}),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"1", "2"}, values)
+	}
+	{
+		status := "done"
+		sql, values := f.QB{
+			Where: f.And(
+				"status", f.IgnorePattern(f.Eql, status, "all"),
+				"gift_id", f.In([]string{"1","2"}),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `status` = ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"1", "2", "done"}, values)
+	}
+	{
+		list := []string{}
+		sql, values := f.QB{
+			Where: f.And(
+				"status", f.Ignore(f.In(list), len(list) == 0),
+				"gift_id", f.In([]string{"1","2"}),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"1", "2"}, values)
+	}
+	{
+		list := []string{"a","b"}
+		sql, values := f.QB{
+			Where: f.And(
+				"status", f.Ignore(f.In(list), len(list) == 0),
+				"gift_id", f.In([]string{"1","2"}),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `status` IN (?, ?) AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"1", "2", "a", "b"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"create_at", f.TimeRange(gtime.Range{
+					Type:  gtime.Range{}.Dict().Type.Day,
+					Start: gtime.ParseChina(gtime.Day, "2019-11-11"),
+					End:  gtime.ParseChina(gtime.Day, "2019-11-23"),
+				}, gtime.Second),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `create_at` >= ? AND `create_at` <= ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"2019-11-11 00:00:00", "2019-11-23 23:59:59"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"date", f.TimeRange(gtime.Range{
+					Type:  gtime.Range{}.Dict().Type.Day,
+					Start: gtime.ParseChina(gtime.Day, "2019-11-11"),
+					End:  gtime.ParseChina(gtime.Day, "2019-11-23"),
+				}, gtime.Day),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `date` >= ? AND `date` <= ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"2019-11-11", "2019-11-23"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"date", f.TimeRange(gtime.Range{
+					Type:  gtime.Range{}.Dict().Type.Month,
+					Start: gtime.ParseChina(gtime.Month, "2019-11"),
+					End:  gtime.ParseChina(gtime.Month, "2020-02"),
+				}, gtime.Day),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `date` >= ? AND `date` <= ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"2019-11-01", "2020-02-29"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"month", f.TimeRange(gtime.Range{
+					Type:  gtime.Range{}.Dict().Type.Month,
+					Start: gtime.ParseChina(gtime.Month, "2019-11"),
+					End:  gtime.ParseChina(gtime.Month, "2020-02"),
+				}, gtime.Month),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `month` >= ? AND `month` <= ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"2019-11", "2020-02"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"age", f.BetweenInt(18, 65),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` BETWEEN ? AND ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{18,65}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"age", f.BetweenFloat(float64(10)/3, float64(20)/3),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` BETWEEN ? AND ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{3.3333333333333335,6.666666666666667}, values)
+	}
+	{
+		sql, values := f.QB{
+			Where: f.And(
+				"age", f.BetweenString("nimo", "nimoz"),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` BETWEEN ? AND ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"nimo","nimoz"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Table: "goods",
+			Where: f.And(
+				"saleCount", f.Custom("= `inventory`"),
+			),
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `goods` WHERE `saleCount` = `inventory`", sql)
+		assert.Equal(t, []interface{}(nil), values)
+	}
+	{
+		sql, values := f.QB{
+			Table: "goods",
+			Where: f.And(
+				"saleCount", f.IgnoreFilter(),
+			),
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `goods`", sql)
+		assert.Equal(t, []interface{}(nil), values)
+	}
+	{
+		sql, values := f.QB{
+			Table: "goods",
+			Where: f.And(
+				"age", f.Eql(1),
+				"saleCount", f.IgnoreFilter(),
+			),
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `goods` WHERE `age` = ?", sql)
+		assert.Equal(t, []interface{}{1}, values)
+	}
+	as.PanicErrorString("f.Filter is empty struct", func() {
+		sql, values := f.QB{
+			Table: "goods",
+			Where: f.And(
+				"age", f.Filter{},
+			),
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `goods`", sql)
+		assert.Equal(t, []interface{}(nil), values)
+	})
+	{
+		sql, values := f.QB{
+				Table: Goods{}.TableName(),
+				Where: []f.AND{{
+					"goods.id": f.OP{f.Eql("1")},
+				}},
+				Join: []f.Join{f.InnerJoin(
+					&Goods{}, Goods{}.Field().ID,
+					&GoodsDetail{} , GoodsDetail{}.Field().GoodsID,
+					)},
+		}.GetSelect()
+		assert.Equal(t, "", sql)
+		assert.Equal(t, []interface{}{"1"}, values)
+	}
 }

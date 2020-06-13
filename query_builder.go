@@ -24,8 +24,9 @@ type Group struct {
 	Field string
 }
 type QB struct {
-	Table string
 	Select []string
+	Table string
+	Join []Join
 	Where []AND
 	Offset int
 	Limit int
@@ -37,6 +38,47 @@ type QB struct {
 	Count bool
 	Debug bool
 	Check string
+}
+type joinKind struct {
+	value string
+}
+type Join struct {
+	Kind joinKind
+	TableName string
+	Field Field
+	RelationTableName string
+	RelationField Field
+
+}
+func (join Join) SwitchKind(
+	InnerJoin func(_InnerJoin bool),
+	) {
+	dict := join.Dict().Kind
+	switch join.Kind {
+	default:
+		panic("Join.Kind is error value")
+	case dict.InnerJoin:
+		InnerJoin(true)
+	}
+}
+func (Join) Dict () (dict struct {
+	Kind struct {
+		InnerJoin joinKind
+	}
+}) {
+	dict.Kind.InnerJoin.value = "innerJoin"
+	return
+}
+type onsymbaol string
+const ON onsymbaol = "onsymbaol"
+func InnerJoin (model Model, field Field, relationModel Model, relationField Field) Join {
+	return Join{
+		Kind: Join{}.Dict().Kind.InnerJoin,
+		TableName: model.TableName(),
+		Field: field,
+		RelationTableName: relationModel.TableName(),
+		RelationField: relationField,
+	}
 }
 
 
@@ -60,7 +102,15 @@ func And(v ...interface{})  []AND {
 		if i%2 == 0 { isKey = true }
 		if !isKey {
 			keyAny := v[i-1]
-			key := keyAny.(string)
+			var key string
+			switch keyAny.(type) {
+			case string:
+				key = keyAny.(string)
+			case Field:
+				key = string(keyAny.(Field))
+			default:
+				panic("key must be string or f.Field")
+			}
 			_, has := and[key]
 			_=has
 			if reflect.TypeOf(itemAny).Name() != "Filter" {
@@ -78,6 +128,9 @@ func And(v ...interface{})  []AND {
 	return []AND{and}
 }
 func wrapField(field string) string {
+	if strings.Contains(field, ".") {
+		return field
+	}
 	return "`" + field + "`"
 }
 
@@ -113,11 +166,26 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 				if len(qb.Select) == 0 {
 					sqlList.Push("*")
 				} else {
-					sqlList.Push("`" + strings.Join(qb.Select, "`, `") + "`")
+					var selectList  []string
+					for _, field := range qb.Select {
+						selectList = append(selectList, wrapField(field))
+					}
+					sqlList.Push(strings.Join(selectList, ", "))
 				}
 			}
 			sqlList.Push("FROM")
 			sqlList.Push(tableName)
+			if len(qb.Join) != 0 {
+				for _, join := range qb.Join {
+					join.SwitchKind(func(_InnerJoin bool) {
+						sqlList.Push("INNER JOIN")
+					})
+					sqlList.Push(join.RelationTableName, "ON")
+					sqlList.Push(join.TableName + "." + string(join.Field))
+					sqlList.Push("=")
+					sqlList.Push(join.RelationTableName + "." + string(join.RelationField))
+				}
+			}
 		case "UPDATE":
 			sqlList.Push("UPDATE")
 			sqlList.Push(tableName)
@@ -381,3 +449,20 @@ func (qb QB) BindModel(model interface{}) QB {
 	return qb
 }
 
+<<<<<<< Updated upstream
+=======
+
+func (qb QB) Paging(page int , perPage int) QB {
+	if page == 0 {
+		page = 1
+	}
+	if perPage == 0 {
+		perPage = 10
+		l.V("gofree: Paging(page, perPage) alert perPage is 0 ,perPage can't be 0 . gofree will set perPage 10. but you nedd check your code.")
+	}
+	qb.Offset = (page - 1) * perPage
+	qb.Limit = perPage
+	return qb
+}
+
+>>>>>>> Stashed changes

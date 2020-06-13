@@ -5,7 +5,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	ge "github.com/og/x/error"
+	"log"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -40,6 +42,10 @@ type txOrDB struct {
 }
 func (db *Database) coreOneQB(txDB txOrDB, modelPtr Model, has *bool, qb QB) {
 	query, values := qb.BindModel(modelPtr).GetSelect()
+	db.coreQueryRow(query, values, txDB, modelPtr, has)
+	return
+}
+func (db *Database) coreQueryRow(query string, values []interface{}, txDB txOrDB, modelPtr interface{} ,has *bool) {
 	var row *sqlx.Row
 	if txDB.UseTx {
 		row = txDB.Tx.QueryRowx(query, values...)
@@ -50,10 +56,26 @@ func (db *Database) coreOneQB(txDB txOrDB, modelPtr Model, has *bool, qb QB) {
 	if err == sql.ErrNoRows { *has = false ; return}
 	if err != nil {panic(err)}
 	*has = true
-	return
 }
 
 
+func (db *Database) OneRelationQB(relationModelPtr RelationModel, has *bool, qb QB) {
+	tableName, join := relationModelPtr.Relation()
+	qb.Table = tableName
+	qb.Join = join
+	scanModelMakeSQLSelect(reflect.ValueOf(relationModelPtr).Elem().Type(), &qb)
+	var selectList []string
+	for _, field := range qb.Select {
+		if strings.Contains(field, ".") {
+			field = field + " AS " + `"` + field + `"`
+		}
+		selectList = append(selectList, field)
+	}
+	qb.Select = selectList
+	query, values := qb.GetSelect()
+	log.Print(query, values)
+	db.coreQueryRow(query, values, txOrDB{UseTx:false}, relationModelPtr, has)
+}
 
 func (db *Database) OneID(modelPtr Model, has *bool, id interface{}) {
 	db.OneQB(modelPtr, has, QB{

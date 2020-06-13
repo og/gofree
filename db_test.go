@@ -1,7 +1,6 @@
 package f_test
 
 import (
-	"database/sql"
 	_ "database/sql"
 	f "github.com/og/gofree"
 	"github.com/stretchr/testify/assert"
@@ -9,24 +8,8 @@ import (
 	"time"
 )
 
-type User struct {
-	ID string `db:"id"`
-	Name string `db:"name"`
-	IsSuper bool `db:"is_super"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
-	DeletedAt sql.NullTime `db:"deleted_at"`
-}
-func (user User) TableName() string {
-	return "user"
-}
-func (user *User) BeforeCreate () {
-	if user.ID == "" {
-		user.ID = f.UUID()
-	}
-}
-func TestNewDatabase(t *testing.T) {
-	db := f.NewDatabase(f.DataSourceName{
+func NewDB() f.Database {
+	return f.NewDatabase(f.DataSourceName{
 		DriverName: "mysql",
 		User:       "root",
 		Password:   "password",

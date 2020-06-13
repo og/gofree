@@ -5,7 +5,9 @@ type Model interface {
 	BeforeCreate()
 }
 
-
+type RelationModel interface {
+	Relation () (tableName string, join []Join)
+}
 
 
 
