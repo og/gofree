@@ -384,7 +384,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Group: []string{"name"},
+			Group: []f.Column{"name"},
 		}
 		sqlS, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` GROUP BY `name`", sqlS)
@@ -395,7 +395,7 @@ func TestQB_Sql(t *testing.T) {
 		qb := f.QB{
 			Table: "user",
 			Where: []f.AND{},
-			Group: []string{"name","age"},
+			Group: []f.Column{"name","age"},
 		}
 		sqlS, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` GROUP BY `name`, `age`", sqlS)

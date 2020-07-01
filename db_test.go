@@ -41,7 +41,7 @@ func NewDB() f.Database {
 	return f.NewDatabase(f.DataSourceName{
 		DriverName: "mysql",
 		User:       "root",
-		Password:   "somepass",
+		Password:   "password",
 		Host:       "localhost",
 		Port:       "3306",
 		DB:         "test_gofree",
@@ -128,7 +128,7 @@ func TestNewDatabase(t *testing.T) {
 	{
 		user := User{}
 		has := false
-		db.OneID(&user, &has, "1")
+		db.OneID(&user, &has, "1").Check("SELECT `id`, `name`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `id` = ? AND `deleted_at` IS NULL")
 		assert.Equal(t, user.ID, "1")
 		assert.Equal(t, user.Name, "nimo")
 		assert.Equal(t, user.IsSuper, false)

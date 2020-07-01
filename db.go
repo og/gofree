@@ -30,25 +30,24 @@ func NewDatabase(dataSourceName DataSourceName) (database Database) {
 	return
 }
 
-func (db *Database) OneQB(modelPtr Model, has *bool, qb QB) {
-	db.coreOneQB(txOrDB{ UseTx: false,}, modelPtr, has, qb)
-	return
+func (db *Database) OneQB(modelPtr Model, has *bool, qb QB) After {
+	return db.coreOneQB(txOrDB{ UseTx: false,}, modelPtr, has, qb)
 }
-func (db *Database) TxOneQB(tx *Tx, modelPtr Model, has *bool, qb QB) {
-	db.coreOneQB(txOrDB{ UseTx: true,Tx: tx.core,}, modelPtr,has, qb)
-	return
+func (db *Database) TxOneQB(tx *Tx, modelPtr Model, has *bool, qb QB) After {
+	return db.coreOneQB(txOrDB{ UseTx: true,Tx: tx.core,}, modelPtr,has, qb)
 }
 type txOrDB struct {
 	UseTx bool
 	Tx *sqlx.Tx
 }
-func (db *Database) coreOneQB(txDB txOrDB, modelPtr Model, has *bool, qb QB) {
+func (db *Database) coreOneQB(txDB txOrDB, modelPtr Model, has *bool, qb QB) (after After) {
 	_, isPtr := getPtrElem(modelPtr)
 	if !isPtr {
 		panic("db.OneID() or db.OneQB()  arg `modelPtr` must be a ptr")
 	}
 	scanModelMakeSQLSelect(reflect.ValueOf(modelPtr).Elem().Type(), &qb)
 	query, values := qb.BindModel(modelPtr).GetSelect()
+	after.ActualSQL = append(after.ActualSQL, query)
 	var row *sqlx.Row
 	if txDB.UseTx {
 		row = txDB.Tx.QueryRowx(query, values...)
@@ -64,26 +63,24 @@ func (db *Database) coreOneQB(txDB txOrDB, modelPtr Model, has *bool, qb QB) {
 
 
 
-func (db *Database) OneID(modelPtr Model, has *bool, id interface{}) {
-	db.OneQB(modelPtr, has, QB{
+func (db *Database) OneID(modelPtr Model, has *bool, id interface{}) After {
+	return db.OneQB(modelPtr, has, QB{
 		Where:And("id", id),
 	})
-	return
 }
 
-func (db *Database) TxOneID(tx *Tx, modelPtr Model, has *bool, id interface{}) {
-	db.TxOneQB(tx, modelPtr, has, QB{
+func (db *Database) TxOneID(tx *Tx, modelPtr Model, has *bool, id interface{}) After {
+	return db.TxOneQB(tx, modelPtr, has, QB{
 		Where:And("id", id),
 	})
-	return
 }
-func (db *Database) CountQB(modelPtr Model, qb QB) (count int) {
+func (db *Database) CountQB(modelPtr Model, qb QB) (count int)  {
 	return db.coreCountQB(txOrDB{UseTx:false,}, modelPtr, qb)
 }
 func (db *Database) TxCountQB(tx *Tx, modelPtr Model, qb QB) (count int) {
 	return db.coreCountQB(txOrDB{UseTx:true, Tx: tx.core}, modelPtr, qb)
 }
-func (db *Database) coreCountQB(txDB txOrDB, modelPtr Model, qb QB) (count int) {
+func (db *Database) coreCountQB(txDB txOrDB, modelPtr Model, qb QB) (count int)  {
 	qb.Count = true
 	query, values := qb.BindModel(modelPtr).GetSelect()
 	var row *sqlx.Row

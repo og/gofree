@@ -30,10 +30,10 @@ type QB struct {
 	Offset int
 	Limit int
 	Order []Order
-	Group []string
+	Group []Column
 	SoftDelete string
-	Insert map[Column]interface{}
-	Update map[Column]interface{}
+	Insert Data
+	Update Data
 	Count bool
 	Debug bool
 	Check []string
@@ -174,7 +174,11 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 		// group by
 		if len(qb.Group) != 0 {
 			sqlList.Push("GROUP BY")
-			sqlList.Push("`" + strings.Join(qb.Group,"`, `") + "`")
+			var gourpString []string
+			for _, group := range qb.Group {
+				gourpString = append(gourpString, string(group))
+			}
+			sqlList.Push("`" + strings.Join(gourpString,"`, `") + "`")
 		}
 	}
 	{
