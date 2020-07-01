@@ -72,7 +72,7 @@ func TestQB_Sql(t *testing.T) {
 		qb := f.QB{
 			Table: "user",
 			Where: []f.AND{
-				{"name": f.OP{f.Eql("nimo")}},
+				{"name": {f.Eql("nimo")}},
 			},
 			SoftDelete: "deleted_at",
 		}
@@ -94,7 +94,7 @@ func TestQB_Sql(t *testing.T) {
 		qb := f.QB{
 			Table: "user",
 			Where: []f.AND{
-				{"name": f.OP{f.Eql("nico")}},
+				{"name": {f.Eql("nico")}},
 			},
 		}
 		sqlS, values := qb.GetSelect()
@@ -116,8 +116,8 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"name": f.OP{f.Eql("nimo")},
-					"age":  f.OP{f.Eql(18)},
+					"name": {f.Eql("nimo")},
+					"age":  {f.Eql(18)},
 				},
 			},
 		}
@@ -126,21 +126,21 @@ func TestQB_Sql(t *testing.T) {
 		assert.Equal(t, []interface {}{18, "nimo"}, values)
 	}
 	{
-		qb := f.QB{
+		qb := f.QB {
 			Table: "user",
-			Where: f.And("name", "nimo", "age",18),
+			Where: f.And(f.Column("name"), "nimo").And(f.Column("age"),18),
 		}
 		sqlS, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `age` = ? AND `name` = ?", sqlS)
 		assert.Equal(t, []interface {}{18, "nimo"}, values)
 	}
 	{
-		qb := f.QB{
+		qb := f.QB {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"name": f.OP{f.Eql("nimo")},
-					"age": f.OP{f.Lt(18), f.Gt(19)},
+					"name": {f.Eql("nimo")},
+					"age": {f.Lt(18), f.Gt(19)},
 				},
 			},
 		}
@@ -151,10 +151,9 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Where: f.And(
-				"name", f.Eql("nimo"),
-				"age", f.Lt(18),
-				"age", f.Gt(19)),
+			Where: f.And("name", f.Eql("nimo")).
+					And("age", f.Lt(18)).
+					And("age", f.Gt(19)),
 		}
 		sqlS, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `age` < ? AND `age` > ? AND `name` = ?", sqlS)
@@ -164,10 +163,10 @@ func TestQB_Sql(t *testing.T) {
 		qb := f.QB{
 			Table: "user",
 			Where: []f.AND{
-					{"city": f.OP{f.Eql("shanghai")}},
+					{"city": {f.Eql("shanghai")}},
 					{
-						"name": f.OP{f.Eql("nimo")},
-						"age": f.OP{f.Lt(18), f.Gt(19)},
+						"name": {f.Eql("nimo")},
+						"age": {f.Lt(18), f.Gt(19)},
 					},
 			},
 		}
@@ -178,14 +177,15 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Where: f.Or(
-				f.And("city", "shanghai"),
-				f.And(
-					"name",f.Eql("nimo"),
-					"age", f.Lt(18),
-					"age", f.Gt(19),
-					),
-				) ,
+			Where: []f.AND{
+				{
+					"city": {f.Eql("shanghai")},
+				},
+				{
+					"name": {f.Eql("nimo")},
+					"age": {f.Lt(18), f.Gt(19)},
+				},
+			},
 		}
 		sqlS, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE ( `city` = ? ) OR ( `age` < ? AND `age` > ? AND `name` = ? )", sqlS)
@@ -194,15 +194,19 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Where: f.Or(
-				f.And("city", "shanghai"),
-				f.And(
-					"name",f.Eql("nimo"),
-					"age", f.Lt(18),
-					"age", f.Gt(19),
-				),
-				f.And("created_at", f.Day(ge.Time(time.Parse(gtime.Second, "2018-11-11 00:11:11")))),
-			) ,
+			Where:
+			[]f.AND{
+				{
+					"city": {f.Eql("shanghai")},
+				},
+				{
+					"name": {f.Eql("nimo")},
+					"age": {f.Lt(18), f.Gt(19)},
+				},
+				{
+					"created_at": {f.Day(ge.Time(time.Parse(gtime.Second, "2018-11-11 00:11:11")))},
+				},
+			},
 		}
 		sqlS, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE ( `city` = ? ) OR ( `age` < ? AND `age` > ? AND `name` = ? ) OR ( `created_at` >= ? AND `created_at` <= ? )", sqlS)
@@ -213,8 +217,8 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"name": f.OP{f.Eql("nimo")},
-					"age": f.OP{f.LtEql(18), f.GtEql(19)},
+					"name": {f.Eql("nimo")},
+					"age": {f.LtEql(18), f.GtEql(19)},
 				},
 			},
 		}
@@ -227,7 +231,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"id": f.OP{
+					"id": {
 						f.Like("1"),
 					},
 				},
@@ -242,7 +246,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"id": f.OP{
+					"id": {
 						f.LikeStart("1"),
 					},
 				},
@@ -257,7 +261,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"id": f.OP{
+					"id": {
 						f.LikeEnd("1"),
 					},
 				},
@@ -272,7 +276,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"id": f.OP{
+					"id": {
 						f.LikeStart("1"),
 					},
 				},
@@ -288,7 +292,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"id": f.OP{
+					"id": {
 						f.In(idList),
 					},
 				},
@@ -304,10 +308,10 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"id": f.OP{
+					"id": {
 						f.In(idList),
 					},
-					"age": f.OP{f.Eql(18)},
+					"age": {f.Eql(18)},
 				},
 			},
 		}
@@ -320,7 +324,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"name": f.OP{
+					"name": {
 						f.Custom("LIKE %-?-%", 1),
 					},
 				},
@@ -335,7 +339,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"name": f.OP{
+					"name": {
 						f.IsNull(),
 					},
 				},
@@ -351,7 +355,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"name": f.OP{
+					"name": {
 						f.IsNotNull(),
 					},
 				},
@@ -367,7 +371,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"time": f.OP{
+					"time": {
 						f.Day(ge.Time(time.Parse(gtime.Second, "2018-11-11 00:11:11"))),
 					},
 				},
@@ -437,9 +441,9 @@ func TestQB_Sql(t *testing.T) {
 		qb := f.QB{
 			Table: "user",
 			Where: []f.AND{
-				{"id": f.OP{f.Eql("13")},},
+				{"id": {f.Eql("13")},},
 			},
-			Update: f.Map{
+			Update: f.Data{
 				"name": "sam",
 			},
 		}
@@ -450,7 +454,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Insert: f.Map{
+			Insert: f.Data{
 				"name": "sam",
 			},
 		}
@@ -461,7 +465,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Insert: f.Map{
+			Insert: f.Data{
 				"name": "sam",
 				"age": 19,
 			},
@@ -516,10 +520,10 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where:[]f.AND{
 				{
-					"created_at": f.OP{
+					"created_at": {
 						f.CustomSQL("`created_at` < ? OR `created_at` > ?", "2019-11-11", "2019-11-11"),
 					},
-					"id": f.OP{f.In([]string{"1","2"})},
+					"id": {f.In([]string{"1","2"})},
 				},
 			},
 			SoftDelete: "deleted_at",
@@ -531,10 +535,9 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Where: f.And(
-				"created_at", f.CustomSQL("`created_at` < ? OR `created_at` > ?", "2019-11-11", "2019-11-11"),
-				"id", f.In([]string{"1","2"}),
-				),
+			Where:
+				f.And("created_at", f.CustomSQL("`created_at` < ? OR `created_at` > ?", "2019-11-11", "2019-11-11")).
+				And("id", f.In([]string{"1","2"})),
 			SoftDelete: "deleted_at",
 		}
 		sql, values := qb.GetSelect()
@@ -544,9 +547,9 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Where: f.And(
-				"created_at", f.CustomSQL("`created_at` < ? OR `end_time` > ?", "2019-11-11", "2019-11-11"),
-				"id", f.In([]string{"1","2"}),
+			Where:
+				f.And("created_at", f.CustomSQL("`created_at` < ? OR `end_time` > ?", "2019-11-11", "2019-11-11")).
+				And("id", f.In([]string{"1","2"}),
 			),
 			SoftDelete: "deleted_at",
 		}
@@ -557,10 +560,9 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Where: f.And(
-				"created_at", f.CustomSQL("`created_at` < ? OR `end_time` > ?", "2019-11-11", "2019-11-11"),
-				"other", f.CustomSQL("`other` = ? OR `other` = ?", "nimo", "tim"),
-				"id", f.In([]string{"1","2"}),
+			Where: f.And("created_at", f.CustomSQL("`created_at` < ? OR `end_time` > ?", "2019-11-11", "2019-11-11")).
+				And("other", f.CustomSQL("`other` = ? OR `other` = ?", "nimo", "tim")).
+				And("id", f.In([]string{"1","2"}),
 			),
 			SoftDelete: "deleted_at",
 		}
@@ -571,11 +573,11 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Where: f.And(
-				"", f.CustomSQL("`start_time` < ? OR `end_time` > ?", "2019-11-11", "2019-11-11"),
-				"start_time", f.Eql("2011-01-01"),
-				"other", f.CustomSQL("`other` = ? OR `other` = ?", "nimo", "tim"),
-				"id", f.In([]string{"1","2"}),
+			Where:
+				f.And("", f.CustomSQL("`start_time` < ? OR `end_time` > ?", "2019-11-11", "2019-11-11")).
+				And("start_time", f.Eql("2011-01-01")).
+				And("other", f.CustomSQL("`other` = ? OR `other` = ?", "nimo", "tim")).
+				And("id", f.In([]string{"1","2"}),
 			),
 			SoftDelete: "deleted_at",
 		}
@@ -588,11 +590,11 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where:[]f.AND{
 				{
-					"created_at": f.OP{
+					"created_at": {
 						f.CustomSQL("`created_at` < ? OR `created_at` > ?", "2019-11-11", "2019-11-11"),
 						f.Eql("2010-11-11"),
 					},
-					"id": f.OP{f.In([]string{"1","2"})},
+					"id": {f.In([]string{"1","2"})},
 				},
 			},
 			SoftDelete: "deleted_at",
@@ -635,10 +637,9 @@ func TestQB_Sql(t *testing.T) {
 	{
 		status := "all"
 		sql, values := f.QB{
-			Where: f.And(
-				"status", f.IgnorePattern(f.Eql, status, "all"),
-				"gift_id", f.In([]string{"1","2"}),
-			),
+			Where:
+				f.And("status", f.IgnorePattern(f.Eql, status, "all")).
+				And("gift_id", f.In([]string{"1","2"})),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{"1", "2"}, values)
@@ -646,10 +647,9 @@ func TestQB_Sql(t *testing.T) {
 	{
 		status := "done"
 		sql, values := f.QB{
-			Where: f.And(
-				"status", f.IgnorePattern(f.Eql, status, "all"),
-				"gift_id", f.In([]string{"1","2"}),
-			),
+			Where:
+				f.And("status", f.IgnorePattern(f.Eql, status, "all")).
+				And("gift_id", f.In([]string{"1","2"})),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `status` = ? AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{"1", "2", "done"}, values)
@@ -657,10 +657,9 @@ func TestQB_Sql(t *testing.T) {
 	{
 		list := []string{}
 		sql, values := f.QB{
-			Where: f.And(
-				"status", f.Ignore(f.In(list), len(list) == 0),
-				"gift_id", f.In([]string{"1","2"}),
-			),
+			Where:
+				f.And("status", f.Ignore(f.In(list), len(list) == 0)).
+				And("gift_id", f.In([]string{"1","2"})),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{"1", "2"}, values)
@@ -668,10 +667,9 @@ func TestQB_Sql(t *testing.T) {
 	{
 		list := []string{"a","b"}
 		sql, values := f.QB{
-			Where: f.And(
-				"status", f.Ignore(f.In(list), len(list) == 0),
-				"gift_id", f.In([]string{"1","2"}),
-			),
+			Where:
+				f.And("status", f.Ignore(f.In(list), len(list) == 0)).
+				And("gift_id", f.In([]string{"1","2"})),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `status` IN (?, ?) AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{"1", "2", "a", "b"}, values)
@@ -778,10 +776,9 @@ func TestQB_Sql(t *testing.T) {
 	{
 		sql, values := f.QB{
 			Table: "goods",
-			Where: f.And(
-				"age", f.Eql(1),
-				"saleCount", f.IgnoreFilter(),
-			),
+			Where:
+				f.And("age", f.Eql(1)).
+				And("saleCount", f.IgnoreFilter()),
 		}.GetSelect()
 		assert.Equal(t, "SELECT * FROM `goods` WHERE `age` = ?", sql)
 		assert.Equal(t, []interface{}{1}, values)

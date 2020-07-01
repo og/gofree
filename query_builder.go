@@ -17,11 +17,11 @@ import (
 )
 type Order struct {
 	// Field Type 的顺序永远不能换
-	Field string
+	Column Column
 	Type orderType
 }
 type Group struct {
-	Field string
+	Column Column
 }
 type QB struct {
 	Table string
@@ -32,65 +32,33 @@ type QB struct {
 	Order []Order
 	Group []string
 	SoftDelete string
-	Insert Map
-	Update Map
+	Insert map[Column]interface{}
+	Update map[Column]interface{}
 	Count bool
 	Debug bool
 	Check []string
 }
-
-
-// QueryBuilder Where
-type AND map[string]OP
-
-// FindOr(Find(...), Find(...))
-func Or (find  ...[]AND) (andList []AND)   {
-	andList = []AND{}
-	for _, v := range find {
-		andList = append(andList, v[0])
+type AND map[Column][]Filter
+type AndList []AND
+func (where AndList) And(column Column, value interface{}) AndList {
+	var filterValue Filter
+	switch value.(type) {
+	case Filter:
+		filterValue = value.(Filter)
+	default:
+		filterValue = Eql(value)
 	}
-	return
+	if len(where) == 0 {
+		where = append(where, map[Column][]Filter{})
+	}
+	where[0][column] = append(where[0][column], filterValue)
+	return where
 }
-func Where(v ...interface{}) QB {
-	return QB{
-		Where: And(v...),
-	}
+func And(column Column, value interface{}) AndList {
+	return AndList{}.And(column, value)
 }
-//  f.And("name","nimo")
-// 接收 ...interface{} 作为参数而不是 map[string]interface{} 是因为会存在这种情况
-// f.And("age", f.Lt(19), "age", f.Gt(10))
-func And(v ...interface{})  []AND {
-	vLen := len(v)
-	if vLen%2 !=0  {
-		panic(errors.New("gofree: f.And(v ...inteface{}) len(v) must be even, may be you forget some."))
-	}
-	and := AND{}
-	for i:=0;i<vLen;i++ {
-		itemAny := v[i]
-		var item Filter
-		var isKey bool
-		if i%2 == 0 { isKey = true }
-		if !isKey {
-			keyAny := v[i-1]
-			key := keyAny.(string)
-			_, has := and[key]
-			_=has
-			if reflect.TypeOf(itemAny).Name() != "Filter" {
-				item = Eql(itemAny)
-			} else {
-				item = itemAny.(Filter)
-			}
-			if has {
-				and[key] = append(and[key], item)
-			} else {
-				and[key] = OP{item}
-			}
-		}
-	}
-	return []AND{and}
-}
-func wrapField(field string) string {
-	return "`" + field + "`"
+func wrapField(field Column) string {
+	return "`" + string(field) + "`"
 }
 
 // filter list interface maybe Filter
@@ -134,7 +102,10 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			sqlList.Push("UPDATE")
 			sqlList.Push(tableName)
 			sqlList.Push("SET")
-			keys := gmap.UnsafeKeys(qb.Update).String()
+			var keys []Column
+			for _, key := range gmap.UnsafeKeys(qb.Update).String() {
+				keys = append(keys, Column(key))
+			}
 			if len(keys) == 0 {
 				panic(errors.New("gofree: update can not be a empty map"))
 			}
@@ -150,7 +121,10 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 		case "INSERT":
 			sqlList.Push("INSERT INTO")
 			sqlList.Push(tableName)
-			keys := gmap.UnsafeKeys(qb.Insert).String()
+			var keys []Column
+			for _, key := range gmap.UnsafeKeys(qb.Insert).String() {
+				keys = append(keys, Column(key))
+			}
 			if len(keys) == 0 {
 				panic(errors.New("gofree: Insert can not be a empty map"))
 			}
@@ -180,7 +154,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			switch props.Statement {
 			case "SELECT", "UPDATE":
 				if qb.SoftDelete != "" {
-					WhereList.Push(wrapField(qb.SoftDelete) + " IS NULL")
+					WhereList.Push(wrapField(Column(qb.SoftDelete)) + " IS NULL")
 				}
 			}
 			sqlList.Push(WhereList.Join(" AND "))
@@ -212,9 +186,9 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 				orderType := orderItem.Type
 				switch  orderType {
 				case ASC:
-					orderList.Push(wrapField(orderItem.Field) +" ASC")
+					orderList.Push(wrapField(orderItem.Column) +" ASC")
 				case DESC:
-					orderList.Push(wrapField(orderItem.Field)+" DESC")
+					orderList.Push(wrapField(orderItem.Column)+" DESC")
 				}
 			}
 			sqlList.Push(orderList.Join(", "))
@@ -235,7 +209,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 		}
 	}
 	sql = sqlList.Join(" ")
-	logDebug(qb.Debug, Map{
+	logDebug(qb.Debug, Data{
 		"sql": sql,
 		"values": gjson.String(sqlValues),
 	})
@@ -258,10 +232,10 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 
 
 
-func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]interface{}) {
+func parseAnd (field Column, op []Filter, whereList *glist.StringList, sqlValues *[]interface{}) {
 	for _, filter := range op {
 		if reflect.ValueOf(filter.Value).IsValid() && reflect.TypeOf(filter.Value).String() == "time.Time" {
-			panic("gofree: can not use time.Time be sql value, mayby you should time.Format(layout), \r\n` "+ field + ":"+ filter.Value.(time.Time).Format(gtime.Second) + "`")
+			panic("gofree: can not use time.Time be sql value, mayby you should time.Format(layout), \r\n` "+ string(field) + ":"+ filter.Value.(time.Time).Format(gtime.Second) + "`")
 		}
 		shouldIgnore := false
 		var fieldSymbolCondition glist.StringList
@@ -397,11 +371,15 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 		}
 	}
 }
-func parseWhere (Where []AND, WhereList *glist.StringList, sqlValues *[]interface{}) {
+func parseWhere (where []AND , WhereList *glist.StringList, sqlValues *[]interface{}) {
 	var orSqlList glist.StringList
-	for _, and := range Where {
+	for _, and := range where {
+		var fieldList []Column
+		for _, key := range gmap.UnsafeKeys(and).String() {
+			fieldList = append(fieldList, Column(key))
+		}
 		var andList glist.StringList
-		for _, field  := range gmap.UnsafeKeys(and).String() {
+		for _, field := range fieldList {
 			op := and[field]
 			parseAnd(field, op, &andList, sqlValues)
 		}
@@ -416,7 +394,7 @@ func parseWhere (Where []AND, WhereList *glist.StringList, sqlValues *[]interfac
 		WhereList.Push(orSqlString)
 	}
 }
-func logDebug(isDebug bool, data Map) {
+func logDebug(isDebug bool, data Data) {
 	if !isDebug {
 		return
 	}

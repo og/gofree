@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-type OP []Filter
 type Filter struct {
 	FieldWrap string
 	FieldWarpArg string

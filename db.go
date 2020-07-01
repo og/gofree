@@ -131,7 +131,7 @@ func (db *Database) coreCreate(txDB txOrDB, modelPtr Model) {
 	reflect.ValueOf(modelPtr).MethodByName("BeforeCreate").Call([]reflect.Value{})
 	typeValue := reflect.TypeOf(modelPtr).Elem()
 	fieldLen := value.NumField()
-	insertData := Map{}
+	insertData := map[Column]interface{}{}
 	for i:=0;i<fieldLen;i++{
 		item := value.Field(i)
 		itemType := typeValue.Field(i)
@@ -140,18 +140,18 @@ func (db *Database) coreCreate(txDB txOrDB, modelPtr Model) {
 			continue
 		}
 		value := item.Interface()
-		insertData[dbName] = value
+		insertData[Column(dbName)] = value
 	}
 	createdAtValue := value.FieldByName("CreatedAt")
 	if createdAtValue.IsValid() {
 		createdAtType, _ := typeValue.FieldByName("CreatedAt")
-		insertData[createdAtType.Tag.Get("db")] = time.Now()
+		insertData[Column(createdAtType.Tag.Get("db"))] = time.Now()
 		createdAtValue.Set(reflect.ValueOf(time.Now()))
 	}
 	updatedAtValue := value.FieldByName("UpdatedAt")
 	if updatedAtValue.IsValid() {
 		updatedAtType, _ := typeValue.FieldByName("UpdatedAt")
-		insertData[updatedAtType.Tag.Get("db")] = time.Now()
+		insertData[Column(updatedAtType.Tag.Get("db"))] = time.Now()
 		updatedAtValue.Set(reflect.ValueOf(time.Now()))
 	}
 	query, values := QB{
@@ -186,7 +186,7 @@ func (db *Database) coreDeleteQB(txDB txOrDB, modelPtr Model, qb QB) {
 		panic("db.DeleteQB() or db.TxDeleteQB()  arg `modelPtr` must be a ptr, eg: db.DeleteQB(&user, qb) db.TxDeleteQB(tx, &user, qb) ")
 	}
 	if len(qb.Update) == 0 {
-		qb.Update = Map{}
+		qb.Update = map[Column]interface{}{}
 	}
 	qb.Update["deleted_at"] = time.Now()
 	query, values := qb.BindModel(modelPtr).GetUpdate()
@@ -224,7 +224,7 @@ func (db *Database) coreDelete(txDB txOrDB, modelPtr Model) {
 		Where: And("id", id),
 	}
 	if len(qb.Update) == 0 {
-		qb.Update = Map{}
+		qb.Update = map[Column]interface{}{}
 	}
 	qb.Update["deleted_at"] = time.Now()
 	query, values := qb.BindModel(modelPtr).GetUpdate()
@@ -268,7 +268,7 @@ func (db *Database) coreUpdate (txDB txOrDB, modelPtr Model) {
 	}
 	typeValue := reflect.TypeOf(modelPtr).Elem()
 	fieldLen := rValue.NumField()
-	updateData := Map{}
+	updateData := map[Column]interface{}{}
 	var id interface{}
 	for i:=0;i<fieldLen;i++{
 		item := rValue.Field(i)
@@ -282,12 +282,12 @@ func (db *Database) coreUpdate (txDB txOrDB, modelPtr Model) {
 			id = value
 			continue
 		}
-		updateData[dbName] = value
+		updateData[Column(dbName)] = value
 	}
 	updatedAtValue := rValue.FieldByName("UpdatedAt")
 	if updatedAtValue.IsValid() {
 		updatedAtType, _ := typeValue.FieldByName("UpdatedAt")
-		updateData[updatedAtType.Tag.Get("db")] = time.Now()
+		updateData[Column(updatedAtType.Tag.Get("db"))] = time.Now()
 		updatedAtValue.Set(reflect.ValueOf(time.Now()))
 	}
 

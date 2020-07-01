@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"regexp"
 )
-type Map map[string]interface{}
+type Data map[Column]interface{}
 func UUID() string {
 	return uuid.New().String()
 }
