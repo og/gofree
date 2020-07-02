@@ -14,27 +14,21 @@ import (
 func init () {
 	_= errors.New
 }
-
+type IDUser string
 type User struct {
-	ID string `db:"id"`
+	ID IDUser `db:"id"`
 	Name string `db:"name"`
 	IsSuper bool `db:"is_super"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 	DeletedAt sql.NullTime `db:"deleted_at"`
 }
-const fUserID = "id"
-const fUserName = "name"
-const fUserIsSuper = "is_super"
-const fUserCreatedAt = "created_at"
-const fUserUpdatedAt = "updated_at"
-const fUserDeletedAt = "deleted_at"
 func (User) TableName() string {
 	return "user"
 }
 func (model *User) BeforeCreate() {
 	if model.ID == "" {
-		model.ID = f.UUID()
+		model.ID = IDUser(f.UUID())
 	}
 }
 func NewDB() f.Database {
