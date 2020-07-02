@@ -6,6 +6,10 @@ import (
 	"testing"
 	"time"
 )
+
+const SQLSelectUserByNameAge = "SELECT `id`, `name`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `age` = ? AND `name` = ? AND `deleted_at` IS NULL"
+const SQLSelectUserByNameAgeGender = "SELECT `id`, `name`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `age` = ? AND `gender` = ? AND `name` = ? AND `deleted_at` IS NULL"
+
 type IDUser string
 type User struct {
 	ID IDUser `db:"id"`
@@ -39,8 +43,11 @@ func (User) Column() (col struct {
 	col.DeletedAt = "deleted_at"
 	return
 }
+var db f.Database
+func init() {
+	db = NewDB()
+}
 func TestDocOneQB(t *testing.T) {
-	db := NewDB()
 	query := struct {
 		Name string
 		Age int
@@ -61,7 +68,6 @@ func TestDocOneQB(t *testing.T) {
 		f.And("name", query.Name).
 			And("age", query.Age).
 			And("gender", f.EqualIgnoreEmpty(query.Gender)),
-	}).
-	Check("SELECT `id`, `name`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `age` = ? AND `gender` = ? AND `name` = ? AND `deleted_at` IS NULL",
-		  "SELECT `id`, `name`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `age` = ? AND `name` = ? AND `deleted_at` IS NULL")
+		Check: []string{SQLSelectUserByNameAge, SQLSelectUserByNameAgeGender},
+	})
 }
