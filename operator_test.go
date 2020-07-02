@@ -7,11 +7,11 @@ import (
 
 
 func TestIgnorePatternAndEmpty(t *testing.T) {
-	assert.Equal(t, IgnorePattern(Eql, "success", "all"),Eql("success"))
-	assert.Equal(t, IgnorePattern(Eql, "all", "all"), IgnoreFilter())
+	assert.Equal(t, EqualIgnoreString("success", "all"),Equal("success"))
+	assert.Equal(t, EqualIgnoreString("all", "all"), IgnoreFilter())
 
-	assert.Equal(t, IgnoreEmpty(Eql, "success"),Eql("success"))
-	assert.Equal(t, IgnoreEmpty(Eql, ""), IgnoreFilter())
+	assert.Equal(t, EqualIgnoreEmpty("success"),Equal("success"))
+	assert.Equal(t, EqualIgnoreEmpty(""), IgnoreFilter())
 }
 func TestIgnore(t *testing.T) {
 	assert.Equal(t, Ignore(Like("success"), "success" == "all"),Like("success"))

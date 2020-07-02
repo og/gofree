@@ -46,7 +46,7 @@ func (where AndList) And(column Column, value interface{}) AndList {
 	case Filter:
 		filterValue = value.(Filter)
 	default:
-		filterValue = Eql(value)
+		filterValue = Equal(value)
 	}
 	if len(where) == 0 {
 		where = append(where, map[Column][]Filter{})

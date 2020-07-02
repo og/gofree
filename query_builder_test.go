@@ -18,7 +18,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Select: []string{"name"},
 			Where: []f.AND{
-				{"name": {f.Eql("nimo")}},
+				{"name": {f.Equal("nimo")}},
 			},
 		}
 		sqlS, values := qb.GetSelect()
@@ -30,7 +30,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Select: []string{"name"},
 			Where: []f.AND{
-				{"name": {f.Eql("nimo")}},
+				{"name": {f.Equal("nimo")}},
 			},
 			Check: []string{"SELECT `name` FROM `user` WHERE `name` = ?"},
 		}
@@ -41,7 +41,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Select: []string{"name", "id"},
 			Where: []f.AND{
-				{"name": {f.Eql("nimo")}},
+				{"name": {f.Equal("nimo")}},
 			},
 			Check: []string{"SELECT `name`, `id` FROM `user` WHERE `name` = ?","SELECT `name` FROM `user` WHERE `name` = ?"},
 		}
@@ -52,7 +52,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Select: []string{"name", "age"},
 			Where: []f.AND{
-				{"name": {f.Eql("nimo")}},
+				{"name": {f.Equal("nimo")}},
 			},
 		}
 		sqlS, values := qb.GetSelect()
@@ -72,7 +72,7 @@ func TestQB_Sql(t *testing.T) {
 		qb := f.QB{
 			Table: "user",
 			Where: []f.AND{
-				{"name": {f.Eql("nimo")}},
+				{"name": {f.Equal("nimo")}},
 			},
 			SoftDelete: "deleted_at",
 		}
@@ -94,7 +94,7 @@ func TestQB_Sql(t *testing.T) {
 		qb := f.QB{
 			Table: "user",
 			Where: []f.AND{
-				{"name": {f.Eql("nico")}},
+				{"name": {f.Equal("nico")}},
 			},
 		}
 		sqlS, values := qb.GetSelect()
@@ -104,7 +104,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Where: f.And("name", f.Eql("nico")),
+			Where: f.And("name", f.Equal("nico")),
 		}
 		sqlS, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ?", sqlS)
@@ -116,8 +116,8 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"name": {f.Eql("nimo")},
-					"age":  {f.Eql(18)},
+					"name": {f.Equal("nimo")},
+					"age":  {f.Equal(18)},
 				},
 			},
 		}
@@ -139,7 +139,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"name": {f.Eql("nimo")},
+					"name": {f.Equal("nimo")},
 					"age": {f.Lt(18), f.Gt(19)},
 				},
 			},
@@ -151,7 +151,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Where: f.And("name", f.Eql("nimo")).
+			Where: f.And("name", f.Equal("nimo")).
 					And("age", f.Lt(18)).
 					And("age", f.Gt(19)),
 		}
@@ -163,9 +163,9 @@ func TestQB_Sql(t *testing.T) {
 		qb := f.QB{
 			Table: "user",
 			Where: []f.AND{
-					{"city": {f.Eql("shanghai")}},
+					{"city": {f.Equal("shanghai")}},
 					{
-						"name": {f.Eql("nimo")},
+						"name": {f.Equal("nimo")},
 						"age": {f.Lt(18), f.Gt(19)},
 					},
 			},
@@ -179,10 +179,10 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"city": {f.Eql("shanghai")},
+					"city": {f.Equal("shanghai")},
 				},
 				{
-					"name": {f.Eql("nimo")},
+					"name": {f.Equal("nimo")},
 					"age": {f.Lt(18), f.Gt(19)},
 				},
 			},
@@ -197,10 +197,10 @@ func TestQB_Sql(t *testing.T) {
 			Where:
 			[]f.AND{
 				{
-					"city": {f.Eql("shanghai")},
+					"city": {f.Equal("shanghai")},
 				},
 				{
-					"name": {f.Eql("nimo")},
+					"name": {f.Equal("nimo")},
 					"age": {f.Lt(18), f.Gt(19)},
 				},
 				{
@@ -217,7 +217,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.AND{
 				{
-					"name": {f.Eql("nimo")},
+					"name": {f.Equal("nimo")},
 					"age": {f.LtEql(18), f.GtEql(19)},
 				},
 			},
@@ -311,7 +311,7 @@ func TestQB_Sql(t *testing.T) {
 					"id": {
 						f.In(idList),
 					},
-					"age": {f.Eql(18)},
+					"age": {f.Equal(18)},
 				},
 			},
 		}
@@ -441,7 +441,7 @@ func TestQB_Sql(t *testing.T) {
 		qb := f.QB{
 			Table: "user",
 			Where: []f.AND{
-				{"id": {f.Eql("13")},},
+				{"id": {f.Equal("13")},},
 			},
 			Update: f.Data{
 				"name": "sam",
@@ -575,7 +575,7 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where:
 				f.And("", f.CustomSQL("`start_time` < ? OR `end_time` > ?", "2019-11-11", "2019-11-11")).
-				And("start_time", f.Eql("2011-01-01")).
+				And("start_time", f.Equal("2011-01-01")).
 				And("other", f.CustomSQL("`other` = ? OR `other` = ?", "nimo", "tim")).
 				And("id", f.In([]string{"1","2"}),
 			),
@@ -592,7 +592,7 @@ func TestQB_Sql(t *testing.T) {
 				{
 					"created_at": {
 						f.CustomSQL("`created_at` < ? OR `created_at` > ?", "2019-11-11", "2019-11-11"),
-						f.Eql("2010-11-11"),
+						f.Equal("2010-11-11"),
 					},
 					"id": {f.In([]string{"1","2"})},
 				},
@@ -614,14 +614,14 @@ func TestQB_Sql(t *testing.T) {
 		{
 			sql, values := f.QB{
 				Table: "user",
-				Where: f.And("title", f.IgnoreEmpty(f.Eql, "")),
+				Where: f.And("title", f.EqualIgnoreEmpty("")),
 			}.GetSelect()
 			assert.Equal(t, "SELECT * FROM `user`", sql)
 			assert.Equal(t, []interface {}(nil), values)
 		}
 		{
 			sql, values := f.QB{
-				Where: f.And("title", f.IgnoreEmpty(f.Eql, "")),
+				Where: f.And("title", f.EqualIgnoreEmpty("")),
 			}.BindModel(&User{}).GetSelect()
 			assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL", sql)
 			assert.Equal(t, []interface {}(nil), values)
@@ -638,7 +638,7 @@ func TestQB_Sql(t *testing.T) {
 		status := "all"
 		sql, values := f.QB{
 			Where:
-				f.And("status", f.IgnorePattern(f.Eql, status, "all")).
+				f.And("status", f.EqualIgnoreString(status, "all")).
 				And("gift_id", f.In([]string{"1","2"})),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `deleted_at` IS NULL", sql)
@@ -648,7 +648,7 @@ func TestQB_Sql(t *testing.T) {
 		status := "done"
 		sql, values := f.QB{
 			Where:
-				f.And("status", f.IgnorePattern(f.Eql, status, "all")).
+				f.And("status", f.EqualIgnoreString(status, "all")).
 				And("gift_id", f.In([]string{"1","2"})),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (?, ?) AND `status` = ? AND `deleted_at` IS NULL", sql)
@@ -777,7 +777,7 @@ func TestQB_Sql(t *testing.T) {
 		sql, values := f.QB{
 			Table: "goods",
 			Where:
-				f.And("age", f.Eql(1)).
+				f.And("age", f.Equal(1)).
 				And("saleCount", f.IgnoreFilter()),
 		}.GetSelect()
 		assert.Equal(t, "SELECT * FROM `goods` WHERE `age` = ?", sql)

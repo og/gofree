@@ -71,13 +71,13 @@ func (self Filter) Dict () (dict struct {
 }
 
 type FilterFunc func (v interface{}) Filter
-func Eql(v interface{}) Filter {
+func Equal(v interface{}) Filter {
 	return Filter{
 		Value: v,
 		Symbol: "=",
 	}
 }
-func NotEql(v interface{}) Filter{
+func NotEqual(v interface{}) Filter{
 	return Filter{
 		Value: v,
 		Symbol: "!=",
@@ -232,39 +232,12 @@ const (
 		),
 	}
 */
-func IgnoreEmpty(filterFunc FilterFunc, query string) Filter {
-	return IgnorePattern(filterFunc, query, "")
+func EqualIgnoreEmpty(query string) Filter {
+	return EqualIgnoreString(query,"")
 }
-
-
-// 基于 IgnoreEmpty 的场景下，有些请求并不一定会是空，而是 ?status=all 来表示搜索全部
-// ?status=done 表示搜索已完成的数据 ,此时使用 IgnorePattern(f.Eql, query.Status, "all")
-/*
-	使用场景:
-	f.QB{
-		Where: f.And(
-			"status": f.IgnorePattern( f.Eql, query.Status, "all")
-		),
-	}
-*/
-func IgnorePattern(filterFunc FilterFunc, query string, pattern string) Filter {
-	if query == pattern {
-		return IgnoreFilter()
-	} else {
-		return filterFunc(query)
-	}
+func EqualIgnoreString(query string, pattern string) Filter {
+	return Ignore(Equal(query),query == pattern)
 }
-// 在 IgnoreEmpty 和 IgnorePattern 的场景下WHERE 语句都是 field = ?
-// 有些场景下可能需要 where field in ? 或者没有 field in ?
-// 此时使用 Ignore 完全自定义控制
-/*
-	使用场景:
-	f.QB{
-		Where: f.And(
-			"id": f.Ignore(len(query.idList) == 0, f.In(query.idList))
-		),
-	}
-*/
 func Ignore(filter Filter, ignoreCondition bool)  Filter {
 	if ignoreCondition {
 		return IgnoreFilter()
