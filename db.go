@@ -103,9 +103,8 @@ func (db *Database) TxListQB(tx *Tx, modelListPtr []Model, qb QB) {
 func (db *Database) coreListQB(txDB txOrDB, modelListPtr interface{}, qb QB) {
 	elementType := reflect.TypeOf(modelListPtr).Elem()
 	reflectItemValue := reflect.MakeSlice(elementType, 1,1).Index(0)
-	modelInterface := reflectItemValue.Interface()
 	scanModelMakeSQLSelect(reflectItemValue.Type(), &qb)
-	query, values := qb.BindModel(modelInterface).GetSelect()
+	query, values := qb.BindModel(reflectItemValue.Addr().Interface().(Model)).GetSelect()
 	if qb.Table == "" {
 		tableName := reflectItemValue.MethodByName("TableName").Call([]reflect.Value{})[0].String()
 		qb.Table = tableName

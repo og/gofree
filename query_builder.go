@@ -31,7 +31,7 @@ type QB struct {
 	Limit int
 	Order []Order
 	Group []Column
-	SoftDelete string
+	SoftDelete Column
 	Insert Data
 	Update Data
 	Count bool
@@ -409,15 +409,20 @@ func logDebug(isDebug bool, data Data) {
 		onlyValueLogger.Printf("\t%#+v",value)
 	}
 }
-func (qb QB) BindModel(model interface{}) QB {
+func (qb QB) BindModel(model Model) QB {
+	valuePtr := reflect.ValueOf(model)
+	value := valuePtr.Elem()
+	valueType := value.Type()
 	if qb.Table == "" {
-		tableName := reflect.ValueOf(model).MethodByName("TableName").Call([]reflect.Value{})[0].String()
+		tableName := valuePtr.MethodByName("TableName").Call([]reflect.Value{})[0].String()
 		qb.Table = tableName
 		if qb.Table == "" {
 			panic(errors.New("tableName is empty string"))
 		}
 	}
-	qb.SoftDelete = "deleted_at"
+	if structField, has := valueType.FieldByName("DeletedAt"); has {
+		qb.SoftDelete = Column(structField.Tag.Get("db"))
+	}
 	return qb
 }
 
