@@ -25,8 +25,8 @@ type Group struct {
 }
 type QB struct {
 	Table string
-	Select []string
-	Where []AND
+	Select []Column
+	Where []WhereAnd
 	Offset int
 	Limit int
 	Order []Order
@@ -38,9 +38,9 @@ type QB struct {
 	Debug bool
 	Check []string
 }
-type AND map[Column][]Filter
-type AndList []AND
-func (where AndList) And(column Column, value interface{}) AndList {
+type WhereAnd map[Column][]Filter
+type WhereAndList []WhereAnd
+func (where WhereAndList) And(column Column, value interface{}) WhereAndList {
 	var filterValue Filter
 	switch value.(type) {
 	case Filter:
@@ -54,8 +54,8 @@ func (where AndList) And(column Column, value interface{}) AndList {
 	where[0][column] = append(where[0][column], filterValue)
 	return where
 }
-func And(column Column, value interface{}) AndList {
-	return AndList{}.And(column, value)
+func And(column Column, value interface{}) WhereAndList {
+	return WhereAndList{}.And(column, value)
 }
 func wrapField(field Column) string {
 	return "`" + string(field) + "`"
@@ -78,14 +78,71 @@ func (qb QB) GetInsert()  (sql string, sqlValues []interface{}) {
 	})
 }
 type SQLProps struct {
-	Statement string `eg:"[]string{\"SELECT\", \"UPDATE\", \"DELETE\", \"INSERT\"}"`
+	Statement statement `eg:"[]string{\"SELECT\", \"UPDATE\", \"DELETE\", \"INSERT\"}"`
 }
+func (SQLProps) Dict() (dict struct {
+	Statement struct {
+		Select statement
+		Update statement
+		Delete statement
+		INSERT statement
+	}
+}) {
+	dict.Statement.Select = "SELECT"
+	dict.Statement.Update = "UPDATE"
+	dict.Statement.Delete = "DELETE"
+	dict.Statement.INSERT = "INSERT"
+	return
+}
+func (v SQLProps) SwitchStatement(
+	Insert func(_Insert int),
+	Select func(_Select bool),
+	Update func(_Update string),
+	Delete func(_Delete []int),
+	) {
+	dict := v.Dict().Statement
+	switch v.Statement {
+	default:
+		panic("gofree: f.SQLProps{}.SwitchStatement Statement switch error")
+	case dict.INSERT:
+		Insert(1)
+	case dict.Select:
+		Select(true)
+	case dict.Update:
+		Update("")
+	case dict.Delete:
+		Delete([]int{1})
+	}
+}
+type statement string
 func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 	var sqlList glist.StringList
 	tableName := "`" + qb.Table + "`"
 	{// Statement
-		switch props.Statement {
-		case "SELECT":
+		props.SwitchStatement(
+			func(_Insert int) {
+				sqlList.Push("INSERT INTO")
+				sqlList.Push(tableName)
+				var keys []Column
+				for _, key := range gmap.UnsafeKeys(qb.Insert).String() {
+					keys = append(keys, Column(key))
+				}
+				if len(keys) == 0 {
+					panic(errors.New("gofree: Insert can not be a empty map"))
+				}
+				insertKeyList := glist.StringList{}
+				insertValueList := glist.StringList{}
+				for _, key := range keys {
+					value := qb.Insert[key]
+					insertKeyList.Push(wrapField(key))
+					insertValueList.Push("?")
+					sqlValues = append(sqlValues, value)
+				}
+				sqlList.Push("(" + insertKeyList.Join(", ") + ")")
+				sqlList.Push("VALUES")
+				sqlList.Push("(" + insertValueList.Join(", ") + ")")
+		},
+		func(_Select bool) {
 			sqlList.Push("SELECT")
 			if qb.Count {
 				sqlList.Push("count(*)")
@@ -98,7 +155,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			}
 			sqlList.Push("FROM")
 			sqlList.Push(tableName)
-		case "UPDATE":
+		}, func(_Update string) {
 			sqlList.Push("UPDATE")
 			sqlList.Push(tableName)
 			sqlList.Push("SET")
@@ -116,30 +173,9 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 				sqlValues = append(sqlValues, value)
 			}
 			sqlList.Push(updateValueList.Join(", "))
-		case "DELETE":
-			sqlList.Push("DELETE")
-		case "INSERT":
-			sqlList.Push("INSERT INTO")
-			sqlList.Push(tableName)
-			var keys []Column
-			for _, key := range gmap.UnsafeKeys(qb.Insert).String() {
-				keys = append(keys, Column(key))
-			}
-			if len(keys) == 0 {
-				panic(errors.New("gofree: Insert can not be a empty map"))
-			}
-			insertKeyList := glist.StringList{}
-			insertValueList := glist.StringList{}
-			for _, key := range keys {
-				value := qb.Insert[key]
-				insertKeyList.Push(wrapField(key))
-				insertValueList.Push("?")
-				sqlValues = append(sqlValues, value)
-			}
-			sqlList.Push("(" + insertKeyList.Join(", ") + ")")
-			sqlList.Push("VALUES")
-			sqlList.Push("(" + insertValueList.Join(", ") + ")")
-		}
+		}, func(_Delete []int) {
+				sqlList.Push("DELETE")
+		})
 	}
 	{
 		// Where field operator value
@@ -375,7 +411,7 @@ func parseAnd (field Column, op []Filter, whereList *glist.StringList, sqlValues
 		}
 	}
 }
-func parseWhere (where []AND , WhereList *glist.StringList, sqlValues *[]interface{}) {
+func parseWhere (where []WhereAnd , WhereList *glist.StringList, sqlValues *[]interface{}) {
 	var orSqlList glist.StringList
 	for _, and := range where {
 		var fieldList []Column

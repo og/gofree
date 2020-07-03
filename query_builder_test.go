@@ -16,7 +16,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Select: []string{"name"},
+			Select: []f.Column{"name"},
 			Where: []f.AND{
 				{"name": {f.Equal("nimo")}},
 			},
@@ -28,7 +28,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Select: []string{"name"},
+			Select: []f.Column{"name"},
 			Where: []f.AND{
 				{"name": {f.Equal("nimo")}},
 			},
@@ -39,7 +39,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Select: []string{"name", "id"},
+			Select: []f.Column{"name", "id"},
 			Where: []f.AND{
 				{"name": {f.Equal("nimo")}},
 			},
@@ -50,7 +50,7 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Select: []string{"name", "age"},
+			Select: []f.Column{"name", "age"},
 			Where: []f.AND{
 				{"name": {f.Equal("nimo")}},
 			},
