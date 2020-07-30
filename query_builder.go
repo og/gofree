@@ -40,6 +40,27 @@ type QB struct {
 }
 type WhereAnd map[Column][]Filter
 type WhereAndList []WhereAnd
+func filterListRemove(list []Filter, handle func(index int, filter Filter) (remove bool)) (newFilter []Filter) {
+	for filterIndex, filterItem := range list {
+		if !handle(filterIndex, filterItem) {
+			newFilter = append(newFilter, filterItem)
+		}
+	}
+	return
+}
+func whereAndListRemove(list []WhereAnd, handle func(index int, and WhereAnd) (remove bool)) (newWhere []WhereAnd) {
+	for andIndex, andItem := range list {
+		if !handle(andIndex, andItem) {
+			newWhere = append(newWhere, andItem)
+		}
+	}
+	return
+}
+func whereAndListRemoveByIndex(list []WhereAnd, removeIndex int) (newWhere []WhereAnd) {
+	return whereAndListRemove(list, func(index int, and WhereAnd) (remove bool) {
+		return index == removeIndex
+	})
+}
 func (where WhereAndList) And(column Column, value interface{}) WhereAndList {
 	var filterValue Filter
 	switch value.(type) {
@@ -150,7 +171,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 				if len(qb.Select) == 0 {
 					sqlList.Push("*")
 				} else {
-					sqlList.Push("`" + strings.Join(qb.Select, "`, `") + "`")
+					sqlList.Push("`" + strings.Join(ColumnsToStrings(qb.Select), "`, `") + "`")
 				}
 			}
 			sqlList.Push("FROM")
@@ -179,6 +200,23 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 	}
 	{
 		// Where field operator value
+		// remove ignore
+		for _, whereAnd := range qb.Where {
+			for column, filterList := range whereAnd {
+				for _, filter := range filterList {
+					if filter.Kind == filter.Dict().Kind.GofreeIgnore {
+						if len(filterList) == 1 {
+							delete(whereAnd, column)
+						}
+					}
+				}
+			}
+		}
+		for whereAndIndex, whereAnd := range qb.Where {
+			if len(whereAnd) == 0 {
+				qb.Where = whereAndListRemoveByIndex(qb.Where, whereAndIndex)
+			}
+		}
 		shouldWhere := len(qb.Where) != 0  || qb.SoftDelete != ""
 		if props.Statement == "INSERT" {
 			shouldWhere = false

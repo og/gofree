@@ -24,7 +24,7 @@ func optionCUD (databaseOptionList []Option, requestOptionList []OptionDTO) (out
 	output.DeleteIDList = []IDOption{}
 	output.CreateOptionList = []Option{}
 	output.UpdateOptionList = []Option{}
-	cudOutput := f.CUD(f.CUDIDList{
+	cudOutput := f.CreateUpdateDelete(f.CreateUpdateDeleteInput{
 		ExistIDList:  func() (idList []string){
 			for _,option := range databaseOptionList {
 				idList = append(idList, string(option.ID))

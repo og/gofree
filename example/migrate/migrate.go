@@ -19,6 +19,3 @@ func Migrate() {
 	migrate.Init(masterDB)
 	Migrate2020_04_04_16_03_07_addbook(migrate)
 }
-
-
-

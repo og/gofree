@@ -18,6 +18,18 @@ func scanModelMakeSQLSelect(modelType reflect.Type, qb *QB)  {
 			}
 			selectList = append(selectList, dbTag)
 		}
-		qb.Select = selectList
+		qb.Select = StringsToColumns(selectList)
 	}
+}
+func StringsToColumns(strings []string) (columns []Column) {
+	for _, s := range strings {
+		columns = append(columns, Column(s))
+	}
+	return
+}
+func ColumnsToStrings (columns []Column) (strings []string) {
+	for _, column := range columns {
+		strings = append(strings, string(column))
+	}
+	return
 }
