@@ -270,3 +270,44 @@ func TestCreateIgnoreField(t *testing.T) {
 		})
 	}
 }
+type ReadQBModel struct {
+	ID string `db:"id"`
+}
+func (ReadQBModel) TableName() string {
+	return "readqb"
+}
+func (*ReadQBModel) BeforeCreate() {
+
+}
+func TestReadQB(t *testing.T) {
+	db := f.NewDatabase(f.DataSourceName{
+		DriverName: "mysql",
+		User:       "root",
+		Password:   "password",
+		Host:       "localhost",
+		Port:       "3306",
+		DB:         "test_gofree",
+	})
+	var list []ReadQBModel
+	data := [][]ReadQBModel{
+		{{"1"},{"2"},},
+		{{"3"},{"4"},},
+		{{"5"},{"6"},},
+		{{"7"},{"8"},},
+		{{"9"},{"10"},},
+	}
+	markIndex := 0
+	qb := f.QB{
+		Order: []f.Order{{"id", f.ASC}},
+	}
+	db.ReadQB(f.ReadQB{
+		Limit:2,
+		ListPtr: &list,
+		QB: qb,
+		Read: func() {
+			assert.Equal(t, list, data[markIndex])
+			markIndex++
+		},
+		Notes: f.NotesReadQB,
+	})
+}
