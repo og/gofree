@@ -309,3 +309,37 @@ func (db Database) Tx() *Tx {
 	tx, err := db.Core.Beginx() ; ge.Check(err)
 	return newTx(tx)
 }
+// 配置项
+type ReadQB struct {
+	Limit int
+	ListPtr interface{}
+	QB QB
+	Read func()
+	Notes NotesReadQBType
+}
+type NotesReadQBType struct {
+	Message string
+}
+var NotesReadQB = NotesReadQBType {
+	Message: `
+请确保基于 f.QB 的查询结果不可变，或者基于时间倒叙查询。（从最早的数据查询到最新的数据）
+目的是为了避免查询数据过程中有新的数据插入，此时 ReadQB 内部通过 offset 查询时会不准确。 
+`,
+}
+// must use asc by order created at or query results are immutable
+func (db Database) ReadQB(conf ReadQB) {
+	qb := conf.QB
+	qb.Limit = conf.Limit
+	qb.Offset = 0
+	listPtr := conf.ListPtr
+	for {
+		list := reflect.ValueOf(listPtr).Elem()
+		list.SetLen(0)
+		db.ListQB(listPtr, qb)
+		if list.Len() == 0 {
+			break
+		}
+		conf.Read()
+		qb.Offset += qb.Limit
+	}
+}
