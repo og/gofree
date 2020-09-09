@@ -20,14 +20,14 @@ func (database Database) Close() {
 func (database Database) GetDataSourceName () DataSourceName {
 	return database.onlyReadDataSourceName
 }
-func NewDatabase(dataSourceName DataSourceName) (database Database) {
+func NewDatabase(dataSourceName DataSourceName) (database Database, err error) {
 	db, err := sqlx.Connect(dataSourceName.DriverName, dataSourceName.GetString())
-	ge.Check(err)
-	database = Database{
-		Core: db,
+	if err != nil {
+		return database, err
 	}
+	database = Database{Core: db,}
 	database.onlyReadDataSourceName = dataSourceName
-	return
+	return database, nil
 }
 
 func (db *Database) OneQB(modelPtr Model, has *bool, qb QB) After {

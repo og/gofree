@@ -4,6 +4,7 @@ import (
 	_ "database/sql"
 	"errors"
 	f "github.com/og/gofree"
+	exampleGofree "github.com/og/gofree/example"
 	ge "github.com/og/x/error"
 	gtime "github.com/og/x/time"
 	"github.com/stretchr/testify/assert"
@@ -14,18 +15,11 @@ func init () {
 	_= errors.New
 }
 
-func NewDB() f.Database {
-	return f.NewDatabase(f.DataSourceName{
-		DriverName: "mysql",
-		User:       "root",
-		Password:   "password",
-		Host:       "localhost",
-		Port:       "3306",
-		DB:         "test_gofree",
-	})
+func NewDB() (f.Database, error) {
+	return f.NewDatabase(exampleGofree.DataSourceName)
 }
 func TestNewDatabase(t *testing.T) {
-	db := NewDB()
+	db, err := NewDB() ; ge.Check(err)
 	{
 		func() {
 			defer func() {
@@ -222,18 +216,11 @@ func (model *User2) BeforeCreate(){
 	}
 }
 func TestCreateIgnoreField(t *testing.T) {
-	db := f.NewDatabase(f.DataSourceName{
-		DriverName: "mysql",
-		User:       "root",
-		Password:   "somepass",
-		Host:       "localhost",
-		Port:       "3306",
-		DB:         "test_gofree",
-	})
+	db, err := NewDB() ; ge.Check(err)
 	user2 := User2{
 		ID: "user2",
 	}
-	_, err := db.Core.Exec(`delete from ` + user2.TableName() + " where id= ?", "user2") ; ge.Check(err)
+	_, err = db.Core.Exec(`delete from ` + user2.TableName() + " where id= ?", "user2") ; ge.Check(err)
 	db.Create(&user2)
 	newUser := User2{}
 	has := false
@@ -257,14 +244,7 @@ func (*ReadQBModel) BeforeCreate() {
 
 }
 func TestReadQB(t *testing.T) {
-	db := f.NewDatabase(f.DataSourceName{
-		DriverName: "mysql",
-		User:       "root",
-		Password:   "password",
-		Host:       "localhost",
-		Port:       "3306",
-		DB:         "test_gofree",
-	})
+	db, err := NewDB() ; ge.Check(err)
 	var list []ReadQBModel
 	data := [][]ReadQBModel{
 		{{"1"},{"2"},},

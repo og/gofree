@@ -2,6 +2,7 @@ package f_test
 
 import (
 	f "github.com/og/gofree"
+	ge "github.com/og/x/error"
 	"testing"
 )
 
@@ -14,6 +15,6 @@ var mock = f.Mock{
 	},
 }
 func TestMock(t *testing.T) {
-	db := NewDB()
+	db, err := NewDB() ; ge.Check(err)
 	f.ResetAndMock(db, mock)
 }

@@ -1,4 +1,4 @@
-package exampleModel
+package exampleGofree
 
 import (
 	"github.com/go-sql-driver/mysql"

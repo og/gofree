@@ -16,6 +16,5 @@ func Migrate() {
 	masterDB := GetProjectDB()
 	defer masterDB.Close()
 	migrate := f.NewMigrate(masterDB)
-	migrate.Init(masterDB)
 	Migrate2020_04_04_16_03_07_addbook(migrate)
 }

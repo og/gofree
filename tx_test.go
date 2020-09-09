@@ -2,18 +2,19 @@ package f_test
 
 import (
 	f "github.com/og/gofree"
+	ge "github.com/og/x/error"
 	grand "github.com/og/x/rand"
 	"testing"
 )
 func TestTx(t *testing.T) {
-	db := f.NewDatabase(f.DataSourceName{
+	db ,err := f.NewDatabase(f.DataSourceName{
 		DriverName: "mysql",
 		User:       "root",
 		Password:   "somepass",
 		Host:       "localhost",
 		Port:       "3306",
 		DB:         "test_gofree",
-	})
+	}) ; ge.Check(err)
 	tx := db.Tx() ; defer func() { tx.End( recover()) }()
 	{
 		user := User{}

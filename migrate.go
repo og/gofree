@@ -33,12 +33,15 @@ func NewMigrate (db Database) Migrate {
 		db: db,
 	}
 }
+type MigrateEngine string
+type MigrateCharset string
+type MigrateCollate string
 type CreateTableInfo struct {
 	TableName string
 	Fields []MigrateField
-	Engine string
-	DefaultCharset string
-	Collate string
+	Engine MigrateEngine
+	DefaultCharset MigrateCharset
+	Collate MigrateCollate
 }
 type MigrateField struct {
 	name string
@@ -49,13 +52,25 @@ type MigrateField struct {
 	autoIncrement bool
 	callate string
 	defaultValue migrateDefaultValue
-	primaryKey string
+	primaryKey bool
+	references struct{
+		valid bool
+		otherTableName string
+		otherTableField string
+	}
+	unique bool
 	extra []string
 	commit string
+	raw string
 }
 func (mi MigrateField) Int(size int) MigrateField {
 	mi.size = size
 	mi.fieldType = "int"
+	return mi
+}
+func (mi MigrateField) Char(size int) MigrateField {
+	mi.size = size
+	mi.fieldType = "char"
 	return mi
 }
 func (mi MigrateField) Varchar(size int) MigrateField {
@@ -67,14 +82,38 @@ func (mi MigrateField) Unsigned() MigrateField {
 	mi.unsigned = true
 	return mi
 }
-func (mi Migrate) Utf8mb4_unicode_ci () string {
+func (mi Migrate) Utf8mb4_unicode_ci () MigrateCollate {
 	return "utf8mb4_unicode_ci"
 }
-func (mi Migrate) InnoDB () string {
-	return "InnoDB"
+func (mi Migrate) Engine() (e struct {
+	BLACKHOLE MigrateEngine
+	CSV MigrateEngine
+	InnoDB MigrateEngine
+	MEMORY MigrateEngine
+	MRG_MyISAM MigrateEngine
+	MyISAM MigrateEngine
+	PERFORMANCE_SCHEMA MigrateEngine
+}) {
+	e.BLACKHOLE = "BLACKHOLE"
+	e.CSV = "CSV"
+	e.InnoDB = "InnoDB"
+	e.MEMORY = "MEMORY"
+	e.MRG_MyISAM = "MRG_MyISAM"
+	e.MyISAM = "MyISAM"
+	e.PERFORMANCE_SCHEMA = "PERFORMANCE_SCHEMA"
+	return
 }
-func (mi Migrate) Utf8mb4 () string {
-	return "utf8mb4"
+func (mi Migrate) Charset() (v struct {
+	Armscii8 MigrateCharset
+	Ascii MigrateCharset
+	Big5 MigrateCharset
+	Binary MigrateCharset
+}) {
+	v.Armscii8 = "armscii8"
+	v.Ascii = "ascii"
+	v.Big5 = "big5"
+	v.Binary = "binary"
+	return
 }
 
 func (mi MigrateField) Collate(kind string)  MigrateField{
@@ -106,10 +145,7 @@ func (mi MigrateField) AutoIncrement() MigrateField {
 	mi.autoIncrement = true
 	return mi
 }
-func (mi MigrateField) PrimaryKey(field string) MigrateField {
-	mi.primaryKey = field
-	return mi
-}
+
 func (mi MigrateField) Text() MigrateField {
 	mi.fieldType = "text"
 	return mi
@@ -137,12 +173,30 @@ func (Migrate) Field(name string) MigrateField {
 		name: name,
 	}
 }
+func (mi MigrateField) PrimaryKey() MigrateField {
+	mi.primaryKey = true
+	return mi
+}
+func (mi MigrateField) References(otherTableName string, otherTableField string) MigrateField {
+	mi.references.valid = true
+	mi.references.otherTableName = otherTableName
+	mi.references.otherTableField = otherTableField
+	return mi
+}
+func (mi MigrateField) Unique() MigrateField {
+	mi.unique = true
+	return mi
+}
 func (mi MigrateField) Timestamp() MigrateField {
 	mi.fieldType = "timestamp"
 	return mi
 }
 func (mi MigrateField) Commit(commit string) MigrateField {
 	mi.commit = commit
+	return mi
+}
+func (mi MigrateField) Raw(raw string) MigrateField {
+	mi.raw = raw
 	return mi
 }
 func (mi MigrateField) Extra(extra string) MigrateField {

@@ -3,6 +3,7 @@ package f_test
 import (
 	"database/sql"
 	f "github.com/og/gofree"
+	ge "github.com/og/x/error"
 	"testing"
 	"time"
 )
@@ -45,7 +46,8 @@ func (User) Column() (col struct {
 }
 var db f.Database
 func init() {
-	db = NewDB()
+	var err error
+	db, err = NewDB() ;ge.Check(err)
 }
 func TestDocOneQB(t *testing.T) {
 	query := struct {
