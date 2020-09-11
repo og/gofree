@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"github.com/andreyvit/diff"
 	gjson "github.com/og/x/json"
-	glist "github.com/og/x/list"
-	l "github.com/og/x/log"
 	gmap "github.com/og/x/map"
 	gtime "github.com/og/x/time"
 	"log"
@@ -113,7 +111,7 @@ type SQLProps struct {
 	Statement string `eg:"[]string{\"SELECT\", \"UPDATE\", \"DELETE\", \"INSERT\"}"`
 }
 func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
-	var sqlList glist.StringList
+	var sqlList stringQueue
 	tableName := "`" + qb.Table + "`"
 	{// Statement
 		switch props.Statement {
@@ -138,7 +136,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			if len(keys) == 0 {
 				panic(errors.New("gofree: update can not be a empty map"))
 			}
-			updateValueList := glist.StringList{}
+			updateValueList := stringQueue{}
 			for _, key := range keys {
 				value := qb.Update[key]
 				updateValueList.Push(wrapField(key) +" = ?")
@@ -154,8 +152,8 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			if len(keys) == 0 {
 				panic(errors.New("gofree: Insert can not be a empty map"))
 			}
-			insertKeyList := glist.StringList{}
-			insertValueList := glist.StringList{}
+			insertKeyList := stringQueue{}
+			insertValueList := stringQueue{}
 			for _, key := range keys {
 				value := qb.Insert[key]
 				insertKeyList.Push(wrapField(key))
@@ -175,7 +173,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 		}
 		if shouldWhere {
 			sqlList.Push("WHERE")
-			var WhereList glist.StringList
+			var WhereList stringQueue
 			parseWhere(qb.Where, &WhereList, &sqlValues)
 			switch props.Statement {
 			case "SELECT", "UPDATE":
@@ -184,7 +182,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 				}
 			}
 			sqlList.Push(WhereList.Join(" AND "))
-			notEmptyStringSqlList := glist.StringList{}
+			notEmptyStringSqlList := stringQueue{}
 			for _, item := range sqlList.Value {
 				if item != "" {
 					notEmptyStringSqlList.Push(item)
@@ -207,7 +205,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 		// order by
 		if len(qb.Order) != 0 {
 			sqlList.Push("ORDER BY")
-			orderList := glist.StringList{}
+			orderList := stringQueue{}
 			for _, orderItem := range qb.Order {
 				orderType := orderItem.Type
 				switch  orderType {
@@ -258,22 +256,22 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 
 
 
-func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]interface{}) {
+func parseAnd (field string, op OP, whereList *stringQueue, sqlValues *[]interface{}) {
 	for _, filter := range op {
 		if reflect.ValueOf(filter.Value).IsValid() && reflect.TypeOf(filter.Value).String() == "time.Time" {
-			panic("gofree: can not use time.Time be sql value, mayby you should time.Format(layout), \r\n` "+ field + ":"+ filter.Value.(time.Time).Format(gtime.Second) + "`")
+			panic("gofree: can not use time.Time be sql value, mayby you should time.Format(layout), \r\n` "+ field + ":"+ filter.Value.(time.Time).Format(gtime.LayoutTime) + "`")
 		}
 		shouldIgnore := false
-		var fieldSymbolCondition glist.StringList
+		var fieldSymbolCondition stringQueue
 		dict := filter.Dict().Kind
 		switchValue := filter.Kind
 		switch switchValue {
 		case dict.Day:
 			fieldSymbolCondition.Push(wrapField(field) + " >= ?")
-			*sqlValues = append(*sqlValues, filter.TimeValue.Format(gtime.Day) + " 00:00:00")
+			*sqlValues = append(*sqlValues, filter.TimeValue.Format(gtime.LayoutDate) + " 00:00:00")
 			fieldSymbolCondition.Push("AND")
 			fieldSymbolCondition.Push(wrapField(field) + " <= ?")
-			*sqlValues = append(*sqlValues, filter.TimeValue.Format(gtime.Day) + " 23:59:59")
+			*sqlValues = append(*sqlValues, filter.TimeValue.Format(gtime.LayoutDate) + " 23:59:59")
 		case dict.Not:
 			fieldSymbolCondition.Push(wrapField(field), "!=")
 			fieldSymbolCondition.Push("?")
@@ -310,7 +308,7 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 			}
 			fieldSymbolCondition.Push(wrapField(field), symbol)
 			var valueList []interface{}
-			var placeholderList glist.StringList
+			var placeholderList stringQueue
 			anyValue := reflect.ValueOf(filter.Value)
 			if anyValue.Len() == 0 {
 				fieldSymbolCondition.Push("(NULL)")
@@ -344,17 +342,16 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 				Start time.Time
 				End time.Time
 			} {}
-			switch timeRange.Type {
-			case timeRange.Dict().Type.Day:
-				valueTime.Start = gtime.FirstHour(timeRange.Start)
-				valueTime.End = gtime.LastHour(timeRange.End)
-			case timeRange.Dict().Type.Month:
-				valueTime.Start = gtime.FirstDay(timeRange.Start)
-				valueTime.End = gtime.LastDay(timeRange.End)
-			case timeRange.Dict().Type.Year:
+			timeRange.Type.Switch(func(_year int) {
 				valueTime.Start = gtime.FirstMonth(timeRange.Start)
 				valueTime.End = gtime.LastMonth(timeRange.End)
-			}
+			}, func(_month bool) {
+				valueTime.Start = gtime.FirstDay(timeRange.Start)
+				valueTime.End = gtime.LastDay(timeRange.End)
+			}, func(_day string) {
+				valueTime.Start = gtime.FirstHour(timeRange.Start)
+				valueTime.End = gtime.LastHour(timeRange.End)
+			})
 			fieldSymbolCondition.Push(wrapField(field) + " >= ?")
 			*sqlValues = append(*sqlValues, valueTime.Start.Format(filter.TimeRange.SQLValueLayout))
 			fieldSymbolCondition.Push("AND")
@@ -397,10 +394,10 @@ func parseAnd (field string, op OP, whereList *glist.StringList, sqlValues *[]in
 		}
 	}
 }
-func parseWhere (Where []AND, WhereList *glist.StringList, sqlValues *[]interface{}) {
-	var orSqlList glist.StringList
+func parseWhere (Where []AND, WhereList *stringQueue, sqlValues *[]interface{}) {
+	var orSqlList stringQueue
 	for _, and := range Where {
-		var andList glist.StringList
+		var andList stringQueue
 		for _, field  := range gmap.UnsafeKeys(and).String() {
 			op := and[field]
 			parseAnd(field, op, &andList, sqlValues)
@@ -446,7 +443,7 @@ func (qb QB) Paging(page int , perPage int) QB {
 	}
 	if perPage == 0 {
 		perPage = 10
-		l.V("gofree: Paging(page, perPage) alert perPage is 0 ,perPage can't be 0 . gofree will set perPage 10. but you nedd check your code.")
+		log.Print("gofree: Paging(page, perPage) alert perPage is 0 ,perPage can't be 0 . gofree will set perPage 10. but you nedd check your code.")
 	}
 	qb.Offset = (page - 1) * perPage
 	qb.Limit = perPage

@@ -4,6 +4,7 @@ import (
 	ge "github.com/og/x/error"
 	"reflect"
 	"regexp"
+	"strings"
 )
 type Map map[string]interface{}
 func UUID() string {
@@ -37,4 +38,43 @@ func scanModelMakeSQLSelect(modelType reflect.Type, qb *QB)  {
 		}
 		qb.Select = selectList
 	}
+}
+
+type stringQueue struct {
+	Value []string
+}
+func (v *stringQueue) Push(args... string) {
+	v.Value = append(v.Value, args...)
+}
+
+func (sList *stringQueue) Pop() stringQueue {
+	return sList.PopBind(&stringQueueBindValue{})
+}
+type stringQueueBindValue struct {
+	Value string
+	Has bool
+}
+func (sList *stringQueue) PopBind(last *stringQueueBindValue) stringQueue {
+	listLen := len(sList.Value)
+	if listLen == 0 {
+		/*
+			Clear StringListBindValue Because in this case
+				```
+				list.PopBind(&last)
+				// do Something..
+				list.PopBind(&last)
+				```
+				last test same var
+		*/
+		last.Value = ""
+		last.Has = false
+		return *sList
+	}
+	last.Value = sList.Value[listLen-1]
+	last.Has = true
+	sList.Value = sList.Value[:listLen-1]
+	return *sList
+}
+func (v stringQueue) Join(separator string) string {
+	return strings.Join(v.Value, separator)
 }
