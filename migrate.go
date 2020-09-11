@@ -103,17 +103,14 @@ func (mi Migrate) Engine() (e struct {
 	return
 }
 func (mi Migrate) Charset() (v struct {
-	Armscii8 MigrateCharset
-	Ascii MigrateCharset
-	Big5 MigrateCharset
-	Binary MigrateCharset
+	Utf8mb4 MigrateCharset
+
 }) {
-	v.Armscii8 = "armscii8"
-	v.Ascii = "ascii"
-	v.Big5 = "big5"
-	v.Binary = "binary"
+	v.Utf8mb4 = "utf8mb4"
 	return
 }
+
+// utf8mb4_unicode_ci
 
 func (mi MigrateField) Collate(kind string)  MigrateField{
 	mi.callate = kind
