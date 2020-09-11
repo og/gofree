@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/andreyvit/diff"
-	gjson "github.com/og/x/json"
 	gmap "github.com/og/x/map"
 	gtime "github.com/og/x/time"
 	"log"
@@ -235,7 +234,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 	sql = sqlList.Join(" ")
 	logDebug(qb.Debug, Map{
 		"sql": sql,
-		"values": gjson.String(sqlValues),
+		"values": sqlValues,
 	})
 	if len(qb.Check) != 0 {
 		matched := false
