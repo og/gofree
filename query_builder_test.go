@@ -194,19 +194,15 @@ func TestQB_Sql(t *testing.T) {
 	{
 		qb := f.QB{
 			Table: "user",
-			Where:
-			[]f.WhereAnd{
-				{
-					"city": {f.Equal("shanghai")},
-				},
-				{
-					"name": {f.Equal("nimo")},
-					"age": {f.Lt(18), f.Gt(19)},
-				},
-				{
-					"created_at": {f.Day(ge.Time(time.Parse(gtime.Second, "2018-11-11 00:11:11")))},
-				},
-			},
+			Where: f.Or(
+				f.And("city", "shanghai"),
+				f.And(
+					"name",f.Eql("nimo"),
+					"age", f.Lt(18),
+					"age", f.Gt(19),
+				),
+				f.And("created_at", f.Day(ge.Time(time.Parse(gtime.LayoutTime, "2018-11-11 00:11:11")))),
+			) ,
 		}
 		sqlS, values := qb.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE ( `city` = ? ) OR ( `age` < ? AND `age` > ? AND `name` = ? ) OR ( `created_at` >= ? AND `created_at` <= ? )", sqlS)
@@ -371,8 +367,8 @@ func TestQB_Sql(t *testing.T) {
 			Table: "user",
 			Where: []f.WhereAnd{
 				{
-					"time": {
-						f.Day(ge.Time(time.Parse(gtime.Second, "2018-11-11 00:11:11"))),
+					"time": f.OP{
+						f.Day(ge.Time(time.Parse(gtime.LayoutTime, "2018-11-11 00:11:11"))),
 					},
 				},
 			},
@@ -678,10 +674,10 @@ func TestQB_Sql(t *testing.T) {
 		sql, values := f.QB{
 			Where: f.And(
 				"create_at", f.TimeRange(gtime.Range{
-					Type:  gtime.Range{}.Dict().Type.Day,
-					Start: gtime.ParseChina(gtime.Day, "2019-11-11"),
-					End:  gtime.ParseChina(gtime.Day, "2019-11-23"),
-				}, gtime.Second),
+					Type:   gtime.Range{}.Type.Enum().Day,
+					Start: gtime.ParseChina(gtime.LayoutDate, "2019-11-11"),
+					End:  gtime.ParseChina(gtime.LayoutDate, "2019-11-23"),
+				}, gtime.LayoutTime),
 			),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `create_at` >= ? AND `create_at` <= ? AND `deleted_at` IS NULL", sql)
@@ -691,10 +687,10 @@ func TestQB_Sql(t *testing.T) {
 		sql, values := f.QB{
 			Where: f.And(
 				"date", f.TimeRange(gtime.Range{
-					Type:  gtime.Range{}.Dict().Type.Day,
-					Start: gtime.ParseChina(gtime.Day, "2019-11-11"),
-					End:  gtime.ParseChina(gtime.Day, "2019-11-23"),
-				}, gtime.Day),
+					Type:  gtime.Range{}.Type.Enum().Day,
+					Start: gtime.ParseChina(gtime.LayoutDate, "2019-11-11"),
+					End:  gtime.ParseChina(gtime.LayoutDate, "2019-11-23"),
+				}, gtime.LayoutDate),
 			),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `date` >= ? AND `date` <= ? AND `deleted_at` IS NULL", sql)
@@ -704,10 +700,10 @@ func TestQB_Sql(t *testing.T) {
 		sql, values := f.QB{
 			Where: f.And(
 				"date", f.TimeRange(gtime.Range{
-					Type:  gtime.Range{}.Dict().Type.Month,
-					Start: gtime.ParseChina(gtime.Month, "2019-11"),
-					End:  gtime.ParseChina(gtime.Month, "2020-02"),
-				}, gtime.Day),
+					Type:   gtime.Range{}.Type.Enum().Month,
+					Start: gtime.ParseChina(gtime.LayoutYearAndMonth, "2019-11"),
+					End:  gtime.ParseChina(gtime.LayoutYearAndMonth, "2020-02"),
+				}, gtime.LayoutDate),
 			),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `date` >= ? AND `date` <= ? AND `deleted_at` IS NULL", sql)
@@ -717,10 +713,10 @@ func TestQB_Sql(t *testing.T) {
 		sql, values := f.QB{
 			Where: f.And(
 				"month", f.TimeRange(gtime.Range{
-					Type:  gtime.Range{}.Dict().Type.Month,
-					Start: gtime.ParseChina(gtime.Month, "2019-11"),
-					End:  gtime.ParseChina(gtime.Month, "2020-02"),
-				}, gtime.Month),
+					Type:   gtime.Range{}.Type.Enum().Month,
+					Start: gtime.ParseChina(gtime.LayoutYearAndMonth, "2019-11"),
+					End:  gtime.ParseChina(gtime.LayoutYearAndMonth, "2020-02"),
+				}, gtime.LayoutYearAndMonth),
 			),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `month` >= ? AND `month` <= ? AND `deleted_at` IS NULL", sql)
@@ -783,7 +779,7 @@ func TestQB_Sql(t *testing.T) {
 		assert.Equal(t, "SELECT * FROM `goods` WHERE `age` = ?", sql)
 		assert.Equal(t, []interface{}{1}, values)
 	}
-	as.PanicErrorString("f.Filter is empty struct", func() {
+	as.PanicError("f.Filter is empty struct", func() {
 		sql, values := f.QB{
 			Table: "goods",
 			Where: f.And(

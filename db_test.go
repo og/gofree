@@ -6,7 +6,6 @@ import (
 	f "github.com/og/gofree"
 	exampleGofree "github.com/og/gofree/example"
 	ge "github.com/og/x/error"
-	gtime "github.com/og/x/time"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -197,7 +196,7 @@ func TestNewDatabase(t *testing.T) {
 		assert.Equal(t, len(userList), 1)
 		assert.Equal(t, userList[0].ID, user.ID)
 		assert.Equal(t, userList[0].Name, "update2")
-		assert.Equal(t, userList[0].UpdatedAt.Format(gtime.Minute), time.Now().Format(gtime.Minute))
+		assert.Equal(t, userList[0].UpdatedAt.Format("2006-01-02 15:04"), time.Now().Format("2006-01-02 15:04"))
 	}
 }
 

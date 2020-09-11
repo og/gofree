@@ -1,6 +1,5 @@
 # gofree
 
-**目前为内部版本,随时会修改接口,非  nimo 团队外的人不要使用**
 
 > Go style ORM
 

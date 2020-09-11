@@ -1,7 +1,6 @@
 package f
 
 import (
-	glist "github.com/og/x/list"
 )
 type Migrate struct {
 	db Database
@@ -152,7 +151,7 @@ func (mi MigrateField) Text() MigrateField {
 }
 func (Migrate) MigrateName(name string){}
 func (Migrate) CreateTable(info CreateTableInfo) {
-	sql := glist.StringList{}
+	sql := stringQueue{}
 	sql.Push("CREATE TABLE `", info.TableName , "`(")
 }
 type Alter struct {

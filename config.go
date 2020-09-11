@@ -1,7 +1,6 @@
 package f
 
 import (
-glist "github.com/og/x/list"
 gmap "github.com/og/x/map"
 "strings"
 )
@@ -43,12 +42,12 @@ func (config DataSourceName) GetString() (dataSourceName string) {
 	}
 
 	configList = append(configList)
-	var UserList glist.StringList
+	var queryList []string
 	for _, key := range gmap.StringStringKeys(config.Query) {
 		value := config.Query[key]
-		UserList.Push(key +"="+value)
+		queryList = append(queryList, key +"="+value)
 	}
-	dataSourceName = strings.Join(configList,"") + UserList.Join("&")
+	dataSourceName = strings.Join(configList,"") + strings.Join(queryList, "&")
 	return
 }
 
