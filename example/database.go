@@ -7,7 +7,7 @@ import (
 var DataSourceName = f.DataSourceName{
 	DriverName: "mysql",
 	User:       "root",
-	Password:   "password",
+	Password:   "somepass",
 	Host:       "localhost",
 	Port:       "3306",
 	DB:         "test_gofree",

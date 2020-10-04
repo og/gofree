@@ -4,9 +4,11 @@ import (
 	f "github.com/og/gofree"
 	ge "github.com/og/x/error"
 	grand "github.com/og/x/rand"
+	gtest "github.com/og/x/test"
 	"testing"
 )
 func TestTx(t *testing.T) {
+	as := gtest.NewAS(t)
 	db ,err := f.NewDatabase(f.DataSourceName{
 		DriverName: "mysql",
 		User:       "root",
@@ -19,7 +21,9 @@ func TestTx(t *testing.T) {
 	{
 		user := User{}
 		has := false
+		db.TxCreate(tx, &User{ID: "1"})
 		db.TxOneID(tx, &user, &has, "1")
+		as.Equal(has, true)
 		user.Name = grand.StringLetter(4)
 		db.TxUpdate(tx, &user)
 		{

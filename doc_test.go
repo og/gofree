@@ -4,17 +4,20 @@ import (
 	"database/sql"
 	f "github.com/og/gofree"
 	ge "github.com/og/x/error"
-	"testing"
 	"time"
 )
 
-const SQLSelectUserByNameAge = "SELECT `id`, `name`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `age` = ? AND `name` = ? AND `deleted_at` IS NULL"
-const SQLSelectUserByNameAgeGender = "SELECT `id`, `name`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `age` = ? AND `gender` = ? AND `name` = ? AND `deleted_at` IS NULL"
+const SQLSelectUserByNameAge = "SELECT `id`, `name`, `age`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `age` = ? AND `name` = ? AND `deleted_at` IS NULL"
+const SQLSelectUserByNameAgeGender = "SELECT `id`, `name`, `age`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `age` = ? AND `gender` = ? AND `name` = ? AND `deleted_at` IS NULL"
 
+func NewIDUser(id string) IDUser {
+	return IDUser(id)
+}
 type IDUser string
 type User struct {
 	ID IDUser `db:"id"`
 	Name string `db:"name"`
+	Age int `db:"age"`
 	IsSuper bool `db:"is_super"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
@@ -48,28 +51,4 @@ var db f.Database
 func init() {
 	var err error
 	db, err = NewDB() ;ge.Check(err)
-}
-func TestDocOneQB(t *testing.T) {
-	query := struct {
-		Name string
-		Age int
-		Gender string
-	}{
-		Name: "nimo",
-		Age: 27,
-		Gender: "f",
-	}
-	// 按50%模拟空 gender
-	if time.Now().Second() % 2 == 0 {
-		query.Gender = ""
-	}
-	var foundUser bool
-	user := User{}
-	db.OneQB(&user, &foundUser, f.QB{
-		Where:
-		f.And("name", query.Name).
-			And("age", query.Age).
-			And("gender", f.EqualIgnoreEmpty(query.Gender)),
-		Check: []string{SQLSelectUserByNameAge, SQLSelectUserByNameAgeGender},
-	})
 }

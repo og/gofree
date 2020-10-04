@@ -2,7 +2,6 @@ package f
 import (
 	"github.com/google/uuid"
 	"reflect"
-	"regexp"
 	"strings"
 )
 type Data map[Column]interface{}
@@ -25,14 +24,15 @@ func scanModelMakeSQLSelect(modelType reflect.Type, qb *QB)  {
 }
 func StringsToColumns(strings []string) (columns []Column) {
 	for _, s := range strings {
-		columns = append(columns, Column(s))
+		columns = append(columns, NewColumn(s))
 	}
 	return
 }
 func ColumnsToStrings (columns []Column) (strings []string) {
 	for _, column := range columns {
-		strings = append(strings, string(column))
+		strings = append(strings, column.String())
 	}
+	return
 }
 
 type stringQueue struct {
@@ -73,3 +73,4 @@ func (sList *stringQueue) PopBind(last *stringQueueBindValue) stringQueue {
 func (v stringQueue) Join(separator string) string {
 	return strings.Join(v.Value, separator)
 }
+

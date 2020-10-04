@@ -75,7 +75,7 @@ func (where WhereAndList) And(column Column, value interface{}) WhereAndList {
 func And(column Column, value interface{}) WhereAndList {
 	return WhereAndList{}.And(column, value)
 }
-func wrapField(field Column) string {
+func wrapField(field string) string {
 	return "`" + string(field) + "`"
 }
 
@@ -148,11 +148,11 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 				if len(keys) == 0 {
 					panic(errors.New("gofree: Insert can not be a empty map"))
 				}
-				insertKeyList := glist.StringList{}
-				insertValueList := glist.StringList{}
+				insertKeyList := stringQueue{}
+				insertValueList := stringQueue{}
 				for _, key := range keys {
 					value := qb.Insert[key]
-					insertKeyList.Push(wrapField(key))
+					insertKeyList.Push(wrapField(key.String()))
 					insertValueList.Push("?")
 					sqlValues = append(sqlValues, value)
 				}
@@ -187,7 +187,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			updateValueList := stringQueue{}
 			for _, key := range keys {
 				value := qb.Update[key]
-				updateValueList.Push(wrapField(key) +" = ?")
+				updateValueList.Push(wrapField(key.String()) +" = ?")
 				sqlValues = append(sqlValues, value)
 			}
 			sqlList.Push(updateValueList.Join(", "))
@@ -225,7 +225,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			switch props.Statement {
 			case "SELECT", "UPDATE":
 				if qb.SoftDelete != "" {
-					WhereList.Push(wrapField(Column(qb.SoftDelete)) + " IS NULL")
+					WhereList.Push(wrapField(qb.SoftDelete.String()) + " IS NULL")
 				}
 			}
 			sqlList.Push(WhereList.Join(" AND "))
@@ -261,9 +261,9 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 				orderType := orderItem.Type
 				switch  orderType {
 				case ASC:
-					orderList.Push(wrapField(orderItem.Column) +" ASC")
+					orderList.Push(wrapField(orderItem.Column.String()) +" ASC")
 				case DESC:
-					orderList.Push(wrapField(orderItem.Column)+" DESC")
+					orderList.Push(wrapField(orderItem.Column.String())+" DESC")
 				}
 			}
 			sqlList.Push(orderList.Join(", "))
@@ -307,7 +307,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 
 
 
-func parseAnd (field string, op OP, whereList *stringQueue, sqlValues *[]interface{}) {
+func parseAnd (field string, op []Filter, whereList *stringQueue, sqlValues *[]interface{}) {
 	for _, filter := range op {
 		if reflect.ValueOf(filter.Value).IsValid() && reflect.TypeOf(filter.Value).String() == "time.Time" {
 			panic("gofree: can not use time.Time be sql value, mayby you should time.Format(layout), \r\n` "+ field + ":"+ filter.Value.(time.Time).Format(gtime.LayoutTime) + "`")
@@ -445,12 +445,12 @@ func parseAnd (field string, op OP, whereList *stringQueue, sqlValues *[]interfa
 		}
 	}
 }
-func parseWhere (Where []AND, WhereList *stringQueue, sqlValues *[]interface{}) {
+func parseWhere (Where []WhereAnd, WhereList *stringQueue, sqlValues *[]interface{}) {
 	var orSqlList stringQueue
 	for _, and := range Where {
 		var andList stringQueue
 		for _, field  := range gmap.UnsafeKeys(and).String() {
-			op := and[field]
+			op := and[NewColumn(field)]
 			parseAnd(field, op, &andList, sqlValues)
 		}
 		andString := andList.Join(" AND ")

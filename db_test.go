@@ -78,7 +78,7 @@ func TestNewDatabase(t *testing.T) {
 		db.OneQB(&user, &has, f.QB{
 			Where: f.And("id", 1),
 		})
-		assert.Equal(t, user.ID, "1")
+		assert.Equal(t, user.ID, NewIDUser("1"))
 		assert.Equal(t, user.Name, "nimo")
 		assert.Equal(t, user.IsSuper, false)
 		assert.Equal(t, has, true)
@@ -89,7 +89,7 @@ func TestNewDatabase(t *testing.T) {
 		db.OneQB(&user, &has, f.QB{
 			Where: f.And("id", -1),
 		})
-		assert.Equal(t, user.ID, "")
+		assert.Equal(t, user.ID, NewIDUser(""))
 		assert.Equal(t, user.Name, "")
 		assert.Equal(t, user.IsSuper, false)
 		assert.Equal(t, has, false)
@@ -98,8 +98,8 @@ func TestNewDatabase(t *testing.T) {
 	{
 		user := User{}
 		has := false
-		db.OneID(&user, &has, "1").Check("SELECT `id`, `name`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `id` = ? AND `deleted_at` IS NULL")
-		assert.Equal(t, user.ID, "1")
+		db.OneID(&user, &has, "1").Check("SELECT `id`, `name`, `age`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `id` = ? AND `deleted_at` IS NULL")
+		assert.Equal(t, user.ID, NewIDUser("1"))
 		assert.Equal(t, user.Name, "nimo")
 		assert.Equal(t, user.IsSuper, false)
 		assert.Equal(t, has, true)
@@ -108,7 +108,7 @@ func TestNewDatabase(t *testing.T) {
 		user := User{}
 		has := false
 		db.OneID(&user, &has, "-1")
-		assert.Equal(t, user.ID, "")
+		assert.Equal(t, user.ID, NewIDUser(""))
 		assert.Equal(t, user.Name, "")
 		assert.Equal(t, user.IsSuper, false)
 		assert.Equal(t, has, false)
@@ -127,11 +127,11 @@ func TestNewDatabase(t *testing.T) {
 		db.ListQB(&userList, f.QB{
 			Where: f.And("id", f.In([]string{"1","2"})),
 		})
-		assert.Equal(t, userList[0].ID, "1")
+		assert.Equal(t, userList[0].ID, NewIDUser("1"))
 		assert.Equal(t, userList[0].Name, "nimo")
 		assert.Equal(t, userList[0].IsSuper, false)
 
-		assert.Equal(t, userList[1].ID, "2")
+		assert.Equal(t, userList[1].ID, NewIDUser("2"))
 		assert.Equal(t, userList[1].Name, "nico")
 		assert.Equal(t, userList[1].IsSuper, true)
 	}
@@ -204,6 +204,7 @@ type User2 struct {
 	EventID string
 	ID string `db:"id"`
 	Name string `db:"name"`
+	Age int `db:"age"`
 	IsSuper bool `db:"is_super"`
 }
 func (User2) TableName() string {
@@ -229,41 +230,7 @@ func TestCreateIgnoreField(t *testing.T) {
 	{
 		// 正常情况下这个不应该报错
 		db.ListQB(&[]User2{}, f.QB{
-			Check: []string{"SELECT `id`, `name`, `is_super` FROM `user` WHERE `deleted_at` IS NULL"},
+			Check: []string{"SELECT `id`, `name`, `age`, `is_super` FROM `user`"},
 		})
 	}
-}
-type ReadQBModel struct {
-	ID string `db:"id"`
-}
-func (ReadQBModel) TableName() string {
-	return "readqb"
-}
-func (*ReadQBModel) BeforeCreate() {
-
-}
-func TestReadQB(t *testing.T) {
-	db, err := NewDB() ; ge.Check(err)
-	var list []ReadQBModel
-	data := [][]ReadQBModel{
-		{{"1"},{"2"},},
-		{{"3"},{"4"},},
-		{{"5"},{"6"},},
-		{{"7"},{"8"},},
-		{{"9"},{"10"},},
-	}
-	markIndex := 0
-	qb := f.QB{
-		Order: []f.Order{{"id", f.ASC}},
-	}
-	db.ReadQB(f.ReadQB{
-		Limit:2,
-		ListPtr: &list,
-		QB: qb,
-		Read: func() {
-			assert.Equal(t, list, data[markIndex])
-			markIndex++
-		},
-		Notes: f.NotesReadQB,
-	})
 }

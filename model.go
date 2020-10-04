@@ -5,6 +5,12 @@ type Model interface {
 	BeforeCreate()
 }
 type Column string
+func NewColumn(column string) Column {
+	return Column(column)
+}
+func (c Column) String() string {
+	return string(c)
+}
 
 
 
