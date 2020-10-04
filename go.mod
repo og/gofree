@@ -7,7 +7,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/google/uuid v1.1.2
 	github.com/jmoiron/sqlx v1.2.0
-	github.com/og/x v0.0.0-20200910092409-a823ff17ca31
+	github.com/og/x v0.0.0-20201004122453-a6d5522f6a1a
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/stretchr/testify v1.6.1
 )

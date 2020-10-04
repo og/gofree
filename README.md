@@ -12,7 +12,7 @@
 ## 消除链式调用
 
 ```go
-// 某 ORM 的链式风格
+//  链式风格ORM
 db.Where("name = ?" , "nimo").
   Where("age = ?" ,18).
   Order("age DESC").First(&user)
@@ -34,7 +34,7 @@ if request.Gender != "" {
 query.Order("age DESC").First(&user)
 ```        
  
- gofree 给出的解决方案是以结构体 QueryBuilder 作为查询条件消除链式调用。
+gofree 给出的解决方案是以结构体 QueryBuilder 作为查询条件消除链式调用。
  
  ```go
 var foundUser bool

@@ -1,7 +1,6 @@
 package f
 
 import (
-	gjson "github.com/og/x/json"
 	"log"
 )
 
@@ -24,6 +23,6 @@ func (after After) Check(sqls ...string) {
 		}
 	}
 	if !pass {
-		log.Print("SQL check fail:" + gjson.StringUnfold(after))
+		log.Printf("SQL check fail: %+v", after)
 	}
 }

@@ -1,30 +1,67 @@
 package f
 
 import (
+	"errors"
+	ge "github.com/og/x/error"
+	"log"
+	"reflect"
+	"strconv"
+	"strings"
 )
 type Migrate struct {
 	db Database
 }
 
-type MigrateModel struct {
-	ID int `db:"id"`
-	Name string `db:"name"`
-	Batch int `db:"batch"`
-	Data string `db:"data"`
-}
 const createMigrateSQL = `
 CREATE TABLE  IF NOT EXISTS gofree_migrations (
   id int(10) unsigned NOT NULL AUTO_INCREMENT,
   name varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  batch int(11) NOT NULL,
-  data text COLLATE utf8mb4_unicode_ci NOT NULL,
+  created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 `
+
 func (mi Migrate) Init(db Database) {
 	_, err := db.Core.Exec(createMigrateSQL)
-	if err != nil {
-		panic(err)
+	mi.CheckError(err, createMigrateSQL)
+}
+func ExecMigrate(db Database, ptr interface{}) {
+	rPtrValue := reflect.ValueOf(ptr)
+	if rPtrValue.Kind() != reflect.Ptr {
+		panic(errors.New("ExecMigrate(db, ptr) ptr must be pointer"))
+	}
+	rValue := rPtrValue.Elem()
+	rType := rValue.Type()
+	if rType.PkgPath() == "main" {
+		panic(errors.New("ExecMigrate(db, ptr) ptr can not belong to package main"))
+	}
+	mi := NewMigrate(db)
+	miValue := reflect.ValueOf(mi)
+	methodNames := []string{}
+	for i:=0;i<rType.NumMethod();i++ {
+		method := rType.Method(i)
+		if strings.HasPrefix(method.Name, "Migrate") {
+			methodNames = append(methodNames, method.Name)
+		}
+	}
+	for _, methodName := range methodNames {
+		row, err := db.Core.Queryx(`SELECT count(*) FROM gofree_migrations WHERE name = ?`, methodName)
+		defer row.Close()
+		if err != nil {
+				panic(err)
+		}
+		count := 0
+		row.Next()
+		ge.Check(row.Scan(&count))
+		if count == 0 {} else if count == 1 {
+			continue
+		} else {
+			panic(errors.New("warning: gofree_migrations has two same name: " + methodName))
+		}
+		log.Print("[gofree migrate]exec: " +methodName)
+		rValue.MethodByName(methodName).Call([]reflect.Value{miValue})
+		_, err = db.Core.Exec("INSERT INTO gofree_migrations (name) VALUES(?)", methodName) ; ge.Check(err)
+		log.Printf("[gofree migrate]done: " +methodName)
 	}
 }
 func NewMigrate (db Database) Migrate {
@@ -33,14 +70,119 @@ func NewMigrate (db Database) Migrate {
 	}
 }
 type MigrateEngine string
+func (engine MigrateEngine) String() string {return string(engine)}
 type MigrateCharset string
+func (charset MigrateCharset) String() string {return string(charset)}
 type MigrateCollate string
-type CreateTableInfo struct {
+func (collate MigrateCollate) String() string {return string(collate)}
+type CreateTableQB struct {
 	TableName string
+	PrimaryKey string
 	Fields []MigrateField
+	UniqueKey map[string][]string
+	Key map[string][]string
+	BeforeOfEndBracketRaw []string
 	Engine MigrateEngine
-	DefaultCharset MigrateCharset
+	Charset MigrateCharset
 	Collate MigrateCollate
+}
+func (qb CreateTableQB) ToSQL() string {
+	sq := stringQueue{}
+	if qb.TableName == "" {
+		panic(errors.New("TableName can not be empty string"))
+	}
+	newLine := "\n"
+	sq.Push(`CREATE TABLE`, " ", "`", qb.TableName, "`", "(")
+	if len(qb.Fields) == 0 {
+		panic(errors.New("Fields can not be empty slice"))
+	}
+	for _, field := range  qb.Fields {
+		sq.Push(newLine, "  ")
+		if field.raw != "" {
+			sq.Push(field.raw, ",")
+			continue
+		}
+		fieldSize := strconv.FormatInt(int64(field.size), 10)
+		sq.Push("`", field.name ,"`"," ", field.fieldType)
+		if field.size != 0 {
+			sq.Push(" (", fieldSize, ")")
+		}
+		if field.unsigned {
+			sq.Push(" unsigned")
+		}
+		if field.characterSet != "" {
+			sq.Push(" CHARACTER SET ", field.characterSet)
+		}
+		if field.collate != "" {
+			sq.Push(" COLLATE ", field.collate)
+		}
+		if field.null {
+			sq.Push(" NULL")
+		} else {
+			sq.Push(" NOT NULL")
+		}
+		if field.defaultValue.raw != "" {
+			sq.Push(" DEFAULT", " ", field.defaultValue.raw)
+		}
+		if len(field.extra) != 0 {
+			sq.Push(" ")
+			sq.Push(strings.Join(field.extra, " "))
+		}
+		if field.autoIncrement {
+			sq.Push(" AUTO_INCREMENT")
+		}
+		if field.references.valid {
+			if field.references.otherTableName == "" {
+				panic(errors.New("references tableName can not be empty string"))
+			}
+			if field.references.otherTableField == "" {
+				panic(errors.New("references field can not be empty string"))
+			}
+			sq.Push(" REFERENCES", field.references.otherTableName, "(", field.references.otherTableField, ")")
+		}
+		if field.commit != "" {
+			sq.Push(" COMMENT", "'" + field.commit + "'")
+		}
+		sq.Push(",")
+	}
+	if qb.PrimaryKey == "" {
+		panic(errors.New("your must set PRIMARY KEY "))
+	}
+	sq.Push(newLine, "  PRIMARY KEY (`", qb.PrimaryKey, "`),")
+	for key, values := range qb.UniqueKey {
+		sq.Push(newLine, "  UNIQUE KEY ", "`", key, "`", " (`" , strings.Join(values, "`,`") ,"`),")
+	}
+	for key, values := range qb.Key {
+		sq.Push(newLine, "  KEY ", "`", key, "`", " (`" , strings.Join(values, "`,`") ,"`),")
+	}
+	for _, raw := range qb.BeforeOfEndBracketRaw {
+		sq.Push(newLine, strings.TrimSuffix(raw, ","), ",")
+	}
+
+	/* 处理sql CRAETE TABLE tableName() 的 () 中不能以 , 结尾的语法  */{
+		popValue := stringQueueBindValue{}
+		sq.PopBind(&popValue)
+		if !popValue.Has {
+			panic(errors.New("sq.PopBind() must has value"))
+		}
+		sq.Push(strings.TrimSuffix(popValue.Value, ","))
+	}
+	sq.Push(newLine, ") ")
+	if qb.Engine == "" {
+		panic(errors.New("field Engine can not be empty string"))
+	}
+	if qb.Engine == "" {
+		panic(errors.New("field Engine can not be empty string"))
+	}
+	if qb.Charset == "" {
+		panic(errors.New("field Charset can not be empty string"))
+	}
+	if qb.Collate == "" {
+		panic(errors.New("field Collate can not be empty string"))
+	}
+	sq.Push("ENGINE=", qb.Engine.String(), " CHARSET=", qb.Charset.String(), " COLLATE=", qb.Collate.String())
+	sq.Push(";")
+	return sq.Join("")
 }
 type MigrateField struct {
 	name string
@@ -49,15 +191,14 @@ type MigrateField struct {
 	unsigned bool
 	null bool
 	autoIncrement bool
-	callate string
+	characterSet string
+	collate string
 	defaultValue migrateDefaultValue
-	primaryKey bool
 	references struct{
 		valid bool
 		otherTableName string
 		otherTableField string
 	}
-	unique bool
 	extra []string
 	commit string
 	raw string
@@ -65,6 +206,11 @@ type MigrateField struct {
 func (mi MigrateField) Int(size int) MigrateField {
 	mi.size = size
 	mi.fieldType = "int"
+	return mi
+}
+func (mi MigrateField) Tinyint(size int) MigrateField {
+	mi.size = size
+	mi.fieldType = "tinyint"
 	return mi
 }
 func (mi MigrateField) Char(size int) MigrateField {
@@ -112,27 +258,36 @@ func (mi Migrate) Charset() (v struct {
 
 // utf8mb4_unicode_ci
 
+func (mi MigrateField) CharacterSet (kind string) MigrateField {
+	mi.characterSet = kind
+	return mi
+}
 func (mi MigrateField) Collate(kind string)  MigrateField{
-	mi.callate = kind
+	mi.collate = kind
 	return mi
 }
 type migrateDefaultValue struct {
 	raw string
 }
-func (mi Migrate) CurrentTimeStamp() migrateDefaultValue {
-	return migrateDefaultValue{
+func (mi MigrateField) DefaultCurrentTimeStamp() MigrateField {
+	mi.defaultValue = migrateDefaultValue{
 		raw: "CURRENT_TIMESTAMP",
 	}
-}
-func (mi Migrate) DefaultString(s string) migrateDefaultValue {
-	return migrateDefaultValue{
-		raw: `"` + s + `"`,
-	}
-}
-func (mi MigrateField) Default(value migrateDefaultValue) MigrateField {
-	mi.defaultValue = value
 	return mi
 }
+func (mi MigrateField) DefaultString(s string) MigrateField {
+	mi.defaultValue = migrateDefaultValue{
+		raw: `'` + s + `'`,
+	}
+	return mi
+}
+func (mi MigrateField) DefaultInt(i int) MigrateField {
+	mi.defaultValue = migrateDefaultValue{
+		raw: `'` + strconv.Itoa(i) + `'`,
+	}
+	return mi
+}
+
 func (mi MigrateField) Null()  MigrateField{
 	mi.null = true
 	return mi
@@ -147,9 +302,19 @@ func (mi MigrateField) Text() MigrateField {
 	return mi
 }
 func (Migrate) MigrateName(name string){}
-func (Migrate) CreateTable(info CreateTableInfo) {
-	sql := stringQueue{}
-	sql.Push("CREATE TABLE `", info.TableName , "`(")
+func (mi Migrate) Exec(sql string, values... interface{}) {
+	_, err := mi.db.Core.Exec(sql, values...)
+	mi.CheckError(err, sql)
+}
+func (mi Migrate) CheckError(err error, sql string) {
+	if err != nil {
+		log.Print(sql)
+		panic(err)
+	}
+}
+func (mi Migrate) CreateTable(qb CreateTableQB) {
+	sql := qb.ToSQL()
+	_, err := mi.db.Core.Exec(sql) ; mi.CheckError(err, sql)
 }
 type Alter struct {
 	migrateField MigrateField
@@ -169,20 +334,13 @@ func (Migrate) Field(name string) MigrateField {
 		name: name,
 	}
 }
-func (mi MigrateField) PrimaryKey() MigrateField {
-	mi.primaryKey = true
-	return mi
-}
 func (mi MigrateField) References(otherTableName string, otherTableField string) MigrateField {
 	mi.references.valid = true
 	mi.references.otherTableName = otherTableName
 	mi.references.otherTableField = otherTableField
 	return mi
 }
-func (mi MigrateField) Unique() MigrateField {
-	mi.unique = true
-	return mi
-}
+
 func (mi MigrateField) Timestamp() MigrateField {
 	mi.fieldType = "timestamp"
 	return mi
@@ -191,9 +349,11 @@ func (mi MigrateField) Commit(commit string) MigrateField {
 	mi.commit = commit
 	return mi
 }
-func (mi MigrateField) Raw(raw string) MigrateField {
-	mi.raw = raw
-	return mi
+func (mi Migrate) FieldRaw(raw string) MigrateField {
+	if strings.HasSuffix(raw, ",") {
+		raw = strings.TrimSuffix(raw, ",")
+	}
+	return MigrateField{raw: raw}
 }
 func (mi MigrateField) Extra(extra string) MigrateField {
 	mi.extra = append(mi.extra, extra)
@@ -206,12 +366,12 @@ func (mi MigrateField) OnUpdateCurrentTimeStamp() MigrateField {
 func (mi Migrate) CreatedAtTimestamp() MigrateField {
 	return mi.Field("created_at").
 		Timestamp().
-		Default(mi.CurrentTimeStamp())
+		DefaultCurrentTimeStamp()
 }
 func (mi Migrate) UpdatedAtTimestamp() MigrateField {
 	return mi.Field("updated_at").
 		Timestamp().
-		Default(mi.CurrentTimeStamp()).
+		DefaultCurrentTimeStamp().
 		OnUpdateCurrentTimeStamp()
 }
 func (mi Migrate) DeletedAtTimestamp() MigrateField {
@@ -225,9 +385,4 @@ func (mi Migrate) CUDTimestamp() []MigrateField {
 		mi.UpdatedAtTimestamp(),
 		mi.DeletedAtTimestamp(),
 	}
-}
-
-func (mi MigrateField) Tinyint(size int) MigrateField {
-	mi.fieldType = "tinyint"
-	return mi
 }
