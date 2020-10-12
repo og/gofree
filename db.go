@@ -150,7 +150,7 @@ func (database *Database) coreCreate(opt sqlOpt, modelPtr Model) {
 	if !isPtr {
 		panic("db.OneID() or db.OneQB()  arg `modelPtr` must be a ptr")
 	}
-	reflect.ValueOf(modelPtr).MethodByName("BeforeCreate").Call([]reflect.Value{})
+	modelPtr.BeforeCreate()
 	typeValue := reflect.TypeOf(modelPtr).Elem()
 	fieldLen := value.NumField()
 	insertData := map[Column]interface{}{}
@@ -187,12 +187,10 @@ func (database *Database) coreCreate(opt sqlOpt, modelPtr Model) {
 		newResult, err := database.Core.ExecContext(opt.CtxOrBackground(),query, values...) ; ge.Check(err)
 		result = newResult
 	}
-
 	lastInsertID, err := result.LastInsertId() ; ge.Check(err)
 	if  lastInsertID != 0 {
 		value.FieldByName("ID").SetInt(lastInsertID)
 	}
-
 }
 
 func (database *Database) Create(modelPtr Model) {

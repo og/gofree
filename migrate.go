@@ -21,8 +21,8 @@ CREATE TABLE  IF NOT EXISTS gofree_migrations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; 
 `
 
-func (mi Migrate) Init(db Database) {
-	_, err := db.Core.Exec(createMigrateSQL)
+func (mi Migrate) Init() {
+	_, err := mi.db.Core.Exec(createMigrateSQL)
 	mi.CheckError(err, createMigrateSQL)
 }
 func ExecMigrate(db Database, ptr interface{}) {
@@ -36,6 +36,7 @@ func ExecMigrate(db Database, ptr interface{}) {
 		panic(errors.New("ExecMigrate(db, ptr) ptr can not belong to package main"))
 	}
 	mi := NewMigrate(db)
+	mi.Init()
 	miValue := reflect.ValueOf(mi)
 	methodNames := []string{}
 	for i:=0;i<rType.NumMethod();i++ {
@@ -48,7 +49,7 @@ func ExecMigrate(db Database, ptr interface{}) {
 		row, err := db.Core.Queryx(`SELECT count(*) FROM gofree_migrations WHERE name = ?`, methodName)
 		defer row.Close()
 		if err != nil {
-				panic(err)
+			panic(err)
 		}
 		count := 0
 		row.Next()

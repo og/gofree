@@ -480,8 +480,7 @@ func (qb QB) BindModel(model Model) QB {
 	value := valuePtr.Elem()
 	valueType := value.Type()
 	if qb.Table == "" {
-		tableName := valuePtr.MethodByName("TableName").Call([]reflect.Value{})[0].String()
-		qb.Table = tableName
+		qb.Table = model.TableName()
 		if qb.Table == "" {
 			panic(errors.New("tableName is empty string"))
 		}
