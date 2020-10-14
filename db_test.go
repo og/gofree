@@ -1,244 +1,124 @@
 package f_test
-//
-// import (
-// 	"database/sql"
-// 	_ "database/sql"
-// 	"errors"
-// 	f "github.com/og/gofree"
-// 	exampleGofree "github.com/og/gofree/example"
-// 	ge "github.com/og/x/error"
-// 	"github.com/stretchr/testify/assert"
-// 	"testing"
-// 	"time"
-// )
-// func init () {
-// 	_= errors.New
-// }
-//
-//
-// var db f.Database
-// func init() {
-// 	var err error
-// 	db, err = NewDB() ;ge.Check(err)
-// }
-//
-// func NewDB() (f.Database, error) {
-// 	return f.NewDatabase(exampleGofree.DataSourceName)
-// }
-// func TestNewDatabase(t *testing.T) {
-// 	db, err := NewDB() ; ge.Check(err)
-// 	{
-// 		func() {
-// 			defer func() {
-// 				r := recover()
-// 				if r == nil {
-// 					t.Fatal(errors.New("sholud be error"))
-// 				}
-//
-// 				err := r.(error)
-//
-// 				assert.Equal(t, "db.Update(&model) or db.TxUpdate(&model) model.id is zero", err.Error())
-// 			}()
-// 			user := User{}
-// 			db.Update(&user)
-// 		}()
-// 	}
-// 	{
-// 		func() {
-// 			defer func() {
-// 				r := recover()
-// 				if r == nil {
-// 					t.Fatal(errors.New("sholud be error"))
-// 				}
-//
-// 				err := r.(error)
-//
-// 				assert.Equal(t, "db.Update(&model) or db.TxUpdate(&model) model.id is zero", err.Error())
-// 			}()
-// 			user := User{}
-// 			db.Update(&user)
-// 		}()
-// 	}
-// 	{
-// 		user := User{
-// 			ID: "1",
-// 		}
-// 		_, err := db.Core.Exec(`delete from ` + user.TableName() + " where id= ?", "1") ; ge.Check(err)
-// 		user.Name = "nimo"
-// 		user.IsSuper = false
-// 		db.Create(&user)
-// 	}
-// 	{
-// 		count := db.CountQB(&User{}, f.QB{
-// 			Where: f.And("id", "1"),
-// 		})
-// 		assert.Equal(t, count, 1)
-// 	}
-// 	{
-// 		count := db.CountQB(&User{}, f.QB{
-// 			Where: f.And("id", -1),
-// 		})
-// 		assert.Equal(t, count, 0)
-// 	}
-// 	{
-// 		user := User{}
-// 		has := false
-// 		db.OneQB(&user, &has, f.QB{
-// 			Where: f.And("id", 1),
-// 		})
-// 		assert.Equal(t, user.ID, NewIDUser("1"))
-// 		assert.Equal(t, user.Name, "nimo")
-// 		assert.Equal(t, user.IsSuper, false)
-// 		assert.Equal(t, has, true)
-// 	}
-// 	{
-// 		user := User{}
-// 		has := false
-// 		db.OneQB(&user, &has, f.QB{
-// 			Where: f.And("id", -1),
-// 		})
-// 		assert.Equal(t, user.ID, NewIDUser(""))
-// 		assert.Equal(t, user.Name, "")
-// 		assert.Equal(t, user.IsSuper, false)
-// 		assert.Equal(t, has, false)
-// 	}
-//
-// 	{
-// 		user := User{}
-// 		has := false
-// 		db.OneID(&user, &has, "1").Check("SELECT `id`, `name`, `age`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `id` = ? AND `deleted_at` IS NULL")
-// 		assert.Equal(t, user.ID, NewIDUser("1"))
-// 		assert.Equal(t, user.Name, "nimo")
-// 		assert.Equal(t, user.IsSuper, false)
-// 		assert.Equal(t, has, true)
-// 	}
-// 	{
-// 		user := User{}
-// 		has := false
-// 		db.OneID(&user, &has, "-1")
-// 		assert.Equal(t, user.ID, NewIDUser(""))
-// 		assert.Equal(t, user.Name, "")
-// 		assert.Equal(t, user.IsSuper, false)
-// 		assert.Equal(t, has, false)
-// 	}
-// 	{
-// 		_, err := db.Core.Exec(`DELETE FROM user WHERE id = ?`, "2")
-// 		if err !=nil {
-// 			panic(err)
-// 		}
-// 		db.Create(&User{
-// 			ID: "2",
-// 			Name: "nico",
-// 			IsSuper: true,
-// 		})
-// 		userList := []User{}
-// 		db.ListQB(&userList, f.QB{
-// 			Where: f.And("id", f.In([]string{"1","2"})),
-// 		})
-// 		assert.Equal(t, userList[0].ID, NewIDUser("1"))
-// 		assert.Equal(t, userList[0].Name, "nimo")
-// 		assert.Equal(t, userList[0].IsSuper, false)
-//
-// 		assert.Equal(t, userList[1].ID, NewIDUser("2"))
-// 		assert.Equal(t, userList[1].Name, "nico")
-// 		assert.Equal(t, userList[1].IsSuper, true)
-// 	}
-// 	{
-// 		user := User{
-// 			Name: "nimo",
-// 		}
-// 		db.Create(&user)
-// 	}
-// 	{
-// 		user := User{
-// 			Name: "deletedQB",
-// 		}
-// 		db.Create(&user)
-// 		db.DeleteQB(&user, f.QB{
-// 			Where: f.And("id", user.ID),
-// 		})
-// 		userList := []User{}
-// 		query, values := f.QB{
-// 			Table: user.TableName(),
-// 			Where: f.And("id", user.ID),
-// 		}.GetSelect()
-// 		err := db.Core.Select(&userList, query, values...) ; ge.Check(err)
-// 		assert.Equal(t, len(userList), 1)
-// 		assert.Equal(t, userList[0].ID, user.ID)
-// 		assert.Equal(t, userList[0].Name, "deletedQB")
-// 		assert.Equal(t, userList[0].DeletedAt.Valid, true)
-// 	}
-// 	{
-// 		user := User{
-// 			Name: "deleted",
-// 		}
-// 		db.Create(&user)
-// 		db.Delete(&user)
-// 		userList := []User{}
-// 		query, values := f.QB{
-// 			Table: user.TableName(),
-// 			Where: f.And("id", user.ID),
-// 		}.GetSelect()
-// 		err := db.Core.Select(&userList, query, values...) ; ge.Check(err)
-// 		assert.Equal(t, len(userList), 1)
-// 		assert.Equal(t, userList[0].ID, user.ID)
-// 		assert.Equal(t, userList[0].Name, "deleted")
-// 		assert.Equal(t, userList[0].DeletedAt.Valid, true)
-// 	}
-// 	{
-// 		user := User{
-// 			Name: "update1",
-// 		}
-// 		db.Create(&user)
-// 		assert.Equal(t, len(user.ID), 36)
-// 		assert.Equal(t, user.Name, "update1")
-// 		user.Name = "update2"
-// 		db.Update(&user)
-// 		assert.Equal(t, user.Name, "update2")
-// 		userList := []User{}
-// 		query, values := f.QB{
-// 			Table: user.TableName(),
-// 			Where: f.And("id", user.ID),
-// 		}.GetSelect()
-// 		err := db.Core.Select(&userList, query, values...) ; ge.Check(err)
-// 		assert.Equal(t, len(userList), 1)
-// 		assert.Equal(t, userList[0].ID, user.ID)
-// 		assert.Equal(t, userList[0].Name, "update2")
-// 		assert.Equal(t, userList[0].UpdatedAt.Format("2006-01-02 15:04"), time.Now().Format("2006-01-02 15:04"))
-// 	}
-// }
-//
-// type User2 struct {
-// 	EventID string
-// 	ID string `db:"id"`
-// 	Name string `db:"name"`
-// 	Age int `db:"age"`
-// 	IsSuper bool `db:"is_super"`
-// }
-// func (User2) TableName() string {
-// 	return "user"
-// }
-// func (model *User2) BeforeCreate(){
-// 	if model.ID == "" {
-// 		model.ID = f.UUID()
-// 	}
-// }
-// func TestCreateIgnoreField(t *testing.T) {
-// 	db, err := NewDB() ; ge.Check(err)
-// 	user2 := User2{
-// 		ID: "user2",
-// 	}
-// 	_, err = db.Core.Exec(`delete from ` + user2.TableName() + " where id= ?", "user2") ; ge.Check(err)
-// 	db.Create(&user2)
-// 	newUser := User2{}
-// 	has := false
-// 	db.OneID(&newUser, &has, "user2")
-// 	assert.Equal(t, has, true)
-// 	assert.Equal(t, newUser.ID, "user2")
-// 	{
-// 		// 正常情况下这个不应该报错
-// 		db.ListQB(&[]User2{}, f.QB{
-// 			Check: []string{"SELECT `id`, `name`, `age`, `is_super` FROM `user`"},
-// 		})
-// 	}
-// }
+
+import (
+	"context"
+	"errors"
+	f "github.com/og/gofree"
+	ge "github.com/og/x/error"
+	gtest "github.com/og/x/test"
+	"testing"
+	"time"
+)
+
+var db f.Database
+func init () {
+	var err error
+	db , err = f.NewDatabase(f.DataSourceName{
+		DriverName: "mysql",
+		User:       "root",
+		Password:   "somepass",
+		Host:       "127.0.0.1",
+		Port:       "3306",
+		DB:         "test_gofree",
+	})
+	if err != nil {panic(err)}
+}
+type MasterMigrate struct {
+
+}
+func (MasterMigrate) Migrate20201013140601CreateUser(mi f.Migrate) {
+	mi.CreateTable(f.CreateTableQB{
+		TableName: "user",
+		PrimaryKey: "id",
+		Fields: append([]f.MigrateField{
+			mi.Field("id").Char(36).DefaultString(""),
+			mi.Field("name").Varchar(20).DefaultString(""),
+			mi.Field("age").Int(11).DefaultInt(0),
+			mi.Field("is_super").Tinyint(1).DefaultInt(0),
+		}, mi.CUDTimestamp()...),
+		Key: nil,
+		Engine: mi.Engine().InnoDB,
+		Charset: mi.Charset().Utf8mb4,
+		Collate: mi.Utf8mb4_unicode_ci(),
+	})
+}
+
+func TestDB(t *testing.T) {
+	as := gtest.NewAS(t)
+	f.ExecMigrate(db, &MasterMigrate{})
+	_, err := db.Core.Exec(`truncate table user`) ; ge.Check(err)
+	db.Create(&User{
+		Name:      "nimo",
+		Age:       18,
+		IsSuper:   true,
+	})
+	var user User
+	var hasUser bool
+	db.OneQB(&user, &hasUser, f.QB{
+		Where:      f.And(user.Column().Name, "nimo"),
+		Check: []string{"SELECT `id`, `name`, `age`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL LIMIT ?"},
+	})
+	as.Equal(len(user.ID), 36)
+	as.Equal(user.Name, "nimo")
+	as.Equal(user.Age, 18)
+	as.Equal(user.IsSuper , true)
+	as.True(user.CreatedAt.After(time.Now().Add(-3*time.Second)))
+	as.True(user.CreatedAt.Before(time.Now().Add(time.Second)))
+	as.True(user.UpdatedAt.After(time.Now().Add(-3*time.Second)))
+	as.True(user.UpdatedAt.Before(time.Now().Add(time.Second)))
+	{
+		ctx ,_ := context.WithTimeout(context.Background(), time.Nanosecond)
+		err = db.CoreCreate(f.SqlOpt{
+			Context: ctx,
+		}, &User{Name:"gofree"})
+		as.Error(err, context.DeadlineExceeded)
+		var createError error
+		select {
+		case <-ctx.Done():
+			createError = ctx.Err()
+		default:
+			t.Fatal("Should not be pass")
+		}
+		as.Error(createError, context.DeadlineExceeded)
+	}
+	{
+		err = db.Tx(func(tx *f.Tx) error {
+			ge.Check(db.CoreCreate(f.SqlOpt{
+				Tx: tx,
+			}, &User{
+				Name: "TXFAIL",
+			}))
+			var hasUser bool
+			err = db.CoreOneQB(f.SqlOpt{Tx:tx,}, &user, &hasUser, f.QB{
+				Where:      f.And(user.Column().Name, "TXFAIL"),
+			})
+			as.NoError(err)
+			as.True(hasUser)
+			as.Equal(user.Name , "TXFAIL")
+			return errors.New("some error")
+		})
+		as.ErrorString(err, "some error")
+		user := User{}
+		var hasUser bool
+		db.OneQB(&user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXFAIL")})
+		as.Equal(hasUser, false)
+		as.Equal(user.ID, IDUser(""))
+	}
+	{
+		err = db.Tx(func(tx *f.Tx) error {
+			ge.Check(db.CoreCreate(f.SqlOpt{
+				Tx: tx,
+			}, &User{
+				Name: "TXCOMMIT",
+			}))
+			return nil
+		})
+		as.NoError(err)
+		user := User{}
+		var hasUser bool
+		db.OneQB(&user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT")})
+		as.Equal(hasUser, true)
+		as.Equal(user.Name, "TXCOMMIT")
+	}
+
+}

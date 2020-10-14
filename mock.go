@@ -19,7 +19,7 @@ Maybe you reset production environment database
 db:
 	`
 func ResetAndMock(db Database, mock Mock) {
-	dataSourceName := db.GetDataSourceName()
+	dataSourceName := db.DataSourceName()
 	if !ge.Bool(regexp.MatchString("^test_", dataSourceName.DB)) {
 		panic(errors.New(resetDangerWaring + dataSourceName.DB))
 	}

@@ -301,7 +301,6 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			}
 		}
 	}
-
 	return
 }
 

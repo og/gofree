@@ -3,7 +3,6 @@ package projectNameMigrate
 import (
 	f "github.com/og/gofree"
 )
-
 func (MasterMigrate) Migrate20201004160444CreateUserTable(mi f.Migrate) {
 	mi.CreateTable(f.CreateTableQB{
 		TableName: "user",
@@ -22,3 +21,4 @@ func (MasterMigrate) Migrate20201004160444CreateUserTable(mi f.Migrate) {
 		Collate: mi.Utf8mb4_unicode_ci(),
 	})
 }
+

@@ -7,6 +7,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	ge "github.com/og/x/error"
+	"log"
 	"reflect"
 	"time"
 )
@@ -18,7 +19,7 @@ type Database struct {
 func (database Database) Close() {
 	ge.Check(database.Core.Close())
 }
-func (database Database) GetDataSourceName () DataSourceName {
+func (database Database) DataSourceName () DataSourceName {
 	return database.onlyReadDataSourceName
 }
 func NewDatabase(dataSourceName DataSourceName) (database Database, err error) {
@@ -30,84 +31,67 @@ func NewDatabase(dataSourceName DataSourceName) (database Database, err error) {
 	database.onlyReadDataSourceName = dataSourceName
 	return database, nil
 }
-
-func (database *Database) OneQB(modelPtr Model, has *bool, qb QB) After {
-	return database.coreOneQB(sqlOpt{}, modelPtr, has, qb)
-}
-func (database *Database) OneQBContext(ctx context.Context, modelPtr Model, has *bool, qb QB) After {
-	return database.coreOneQB(sqlOpt{Context: ctx}, modelPtr, has, qb)
-}
-func (database *Database) TxOneQB(tx *Tx, modelPtr Model, has *bool, qb QB) After {
-	return database.coreOneQB(sqlOpt{Tx: tx.core}, modelPtr,has, qb)
-}
-func (database *Database) TxOneQBContext(ctx context.Context, tx *Tx, modelPtr Model, has *bool, qb QB) After {
-	return database.coreOneQB(sqlOpt{Tx: tx.core,Context: ctx}, modelPtr,has, qb)
-}
-type sqlOpt struct {
-	Tx *sqlx.Tx
+type SqlOpt struct {
+	Tx *Tx
 	Context context.Context
 }
-func (opt sqlOpt) CtxOrBackground() context.Context {
+func (opt SqlOpt) ctxOrTODO() context.Context {
 	if opt.Context == nil {
-		return context.Background()
+		return context.TODO()
 	} else {
 		return opt.Context
 	}
 }
-func (database *Database) coreOneQB(opt sqlOpt, modelPtr Model, has *bool, qb QB) (after After) {
-	_, isPtr := getPtrElem(modelPtr)
-	if !isPtr {
-		panic("db.OneID() or db.OneQB()  arg `modelPtr` must be a ptr")
-	}
+func (database *Database) OneQB(modelPtr Model, has *bool, qb QB) {
+	ge.Check(database.CoreOneQB(SqlOpt{}, modelPtr, has, qb))
+}
+func (database *Database) CoreOneQB(opt SqlOpt, modelPtr Model, has *bool, qb QB) error{
+	qb.Limit = 1
 	scanModelMakeSQLSelect(reflect.ValueOf(modelPtr).Elem().Type(), &qb)
 	query, values := qb.BindModel(modelPtr).GetSelect()
-	after.ActualSQL = append(after.ActualSQL, query)
 	var row *sqlx.Row
 	if opt.Tx != nil  {
-		row = opt.Tx.QueryRowxContext(opt.CtxOrBackground(), query, values...)
+		row = opt.Tx.core.QueryRowxContext(opt.ctxOrTODO(), query, values...)
 	} else {
-		row = database.Core.QueryRowxContext(opt.CtxOrBackground(),query, values...)
+		row = database.Core.QueryRowxContext(opt.ctxOrTODO(),query, values...)
 	}
 	err := row.StructScan(modelPtr)
-	if err == sql.ErrNoRows { *has = false ; return}
-	if err != nil {panic(err)}
+	if err == sql.ErrNoRows { *has = false ; return nil}
+	if err != nil {
+		return err
+	}
 	*has = true
-	return
+	return nil
 }
 
 
 
-func (database *Database) OneID(modelPtr Model, has *bool, id interface{}) After {
-	return database.OneQB(modelPtr, has, QB{
+func (database *Database) OneID(modelPtr Model, has *bool, id interface{}) {
+	database.OneQB(modelPtr, has, QB{
 		Where:And("id", id),
 	})
 }
 
-func (database *Database) TxOneID(tx *Tx, modelPtr Model, has *bool, id interface{}) After {
-	return database.TxOneQB(tx, modelPtr, has, QB{
-		Where:And("id", id),
-	})
-}
 func (database *Database) CountQB(modelPtr Model, qb QB) (count int)  {
-	return database.coreCountQB(sqlOpt{}, modelPtr, qb)
+	return database.coreCountQB(SqlOpt{}, modelPtr, qb)
 }
 func (database *Database) CountQBContext(ctx context.Context, modelPtr Model, qb QB) (count int)  {
-	return database.coreCountQB(sqlOpt{Context: ctx}, modelPtr, qb)
+	return database.coreCountQB(SqlOpt{Context: ctx}, modelPtr, qb)
 }
 func (database *Database) TxCountQB(tx *Tx, modelPtr Model, qb QB) (count int) {
-	return database.coreCountQB(sqlOpt{Tx: tx.core}, modelPtr, qb)
+	return database.coreCountQB(SqlOpt{Tx: tx}, modelPtr, qb)
 }
 func (database *Database) TxCountQBContext(ctx context.Context, tx *Tx, modelPtr Model, qb QB) (count int) {
-	return database.coreCountQB(sqlOpt{Tx: tx.core, Context: ctx}, modelPtr, qb)
+	return database.coreCountQB(SqlOpt{Tx: tx, Context: ctx}, modelPtr, qb)
 }
-func (database *Database) coreCountQB(opt sqlOpt, modelPtr Model, qb QB) (count int)  {
+func (database *Database) coreCountQB(opt SqlOpt, modelPtr Model, qb QB) (count int)  {
 	qb.Count = true
 	query, values := qb.BindModel(modelPtr).GetSelect()
 	var row *sqlx.Row
 	if opt.Tx != nil {
-		row = opt.Tx.QueryRowxContext(opt.CtxOrBackground(),query, values...)
+		row = opt.Tx.core.QueryRowxContext(opt.ctxOrTODO(),query, values...)
 	} else {
-		row = database.Core.QueryRowxContext(opt.CtxOrBackground(),query, values...)
+		row = database.Core.QueryRowxContext(opt.ctxOrTODO(),query, values...)
 	}
 	err := row.Scan(&count)
 	if err != nil {panic(err)}
@@ -115,18 +99,18 @@ func (database *Database) coreCountQB(opt sqlOpt, modelPtr Model, qb QB) (count 
 }
 
 func (database *Database) ListQB(modelListPtr interface{}, qb QB) {
-	database.coreListQB(sqlOpt{}, modelListPtr, qb)
+	database.coreListQB(SqlOpt{}, modelListPtr, qb)
 }
 func (database *Database) ListQBContext(ctx context.Context, modelListPtr interface{}, qb QB) {
-	database.coreListQB(sqlOpt{Context: ctx}, modelListPtr, qb)
+	database.coreListQB(SqlOpt{Context: ctx}, modelListPtr, qb)
 }
 func (database *Database) TxListQB(tx *Tx, modelListPtr []Model, qb QB) {
-	database.coreListQB(sqlOpt{Tx: tx.core}, modelListPtr, qb)
+	database.coreListQB(SqlOpt{Tx: tx}, modelListPtr, qb)
 }
 func (database *Database) TxListQBContext(ctx context.Context, tx *Tx, modelListPtr []Model, qb QB) {
-	database.coreListQB(sqlOpt{Tx: tx.core, Context:ctx}, modelListPtr, qb)
+	database.coreListQB(SqlOpt{Tx: tx, Context:ctx}, modelListPtr, qb)
 }
-func (database *Database) coreListQB(opt sqlOpt, modelListPtr interface{}, qb QB) {
+func (database *Database) coreListQB(opt SqlOpt, modelListPtr interface{}, qb QB) {
 	elementType := reflect.TypeOf(modelListPtr).Elem()
 	reflectItemValue := reflect.MakeSlice(elementType, 1,1).Index(0)
 	scanModelMakeSQLSelect(reflectItemValue.Type(), &qb)
@@ -136,33 +120,35 @@ func (database *Database) coreListQB(opt sqlOpt, modelListPtr interface{}, qb QB
 		qb.Table = tableName
 	}
 	if opt.Tx != nil {
-		err := opt.Tx.SelectContext(opt.CtxOrBackground(),modelListPtr, query, values...)
+		err := opt.Tx.core.SelectContext(opt.ctxOrTODO(),modelListPtr, query, values...)
 		ge.Check(err)
 	} else {
-		err := database.Core.SelectContext(opt.CtxOrBackground(),modelListPtr, query, values...)
+		err := database.Core.SelectContext(opt.ctxOrTODO(),modelListPtr, query, values...)
 		ge.Check(err)
 	}
 	return
 }
 
-func (database *Database) coreCreate(opt sqlOpt, modelPtr Model) {
+func (database *Database) CoreCreate(opt SqlOpt, modelPtr Model) error {
 	value, isPtr := getPtrElem(modelPtr)
 	if !isPtr {
 		panic("db.OneID() or db.OneQB()  arg `modelPtr` must be a ptr")
 	}
 	modelPtr.BeforeCreate()
 	typeValue := reflect.TypeOf(modelPtr).Elem()
-	fieldLen := value.NumField()
 	insertData := map[Column]interface{}{}
-	for i:=0;i<fieldLen;i++{
+	for i:=0;i<value.NumField();i++{
 		item := value.Field(i)
 		itemType := typeValue.Field(i)
-		dbName := itemType.Tag.Get("db")
-		if dbName == "" {
+		dbName, hasDBName := itemType.Tag.Lookup("db")
+		if !hasDBName {
 			continue
 		}
-		value := item.Interface()
-		insertData[Column(dbName)] = value
+		if dbName == "" {
+			log.Print(`Maybe you forget set db:"name"` + itemType.Name)
+			continue
+		}
+		insertData[Column(dbName)] = item.Interface()
 	}
 	createdAtValue := value.FieldByName("CreatedAt")
 	if createdAtValue.IsValid() {
@@ -181,32 +167,25 @@ func (database *Database) coreCreate(opt sqlOpt, modelPtr Model) {
 	}.BindModel(modelPtr).GetInsert()
 	var result sql.Result
 	if opt.Tx != nil {
-		newResult, err := opt.Tx.ExecContext(opt.CtxOrBackground(),query, values...) ; ge.Check(err)
+		newResult, err := opt.Tx.core.ExecContext(opt.ctxOrTODO(),query, values...) ; if err != nil {return err}
 		result = newResult
 	} else {
-		newResult, err := database.Core.ExecContext(opt.CtxOrBackground(),query, values...) ; ge.Check(err)
+		newResult, err := database.Core.ExecContext(opt.ctxOrTODO(),query, values...) ; if err != nil {return err}
 		result = newResult
 	}
 	lastInsertID, err := result.LastInsertId() ; ge.Check(err)
 	if  lastInsertID != 0 {
 		value.FieldByName("ID").SetInt(lastInsertID)
 	}
+	return nil
 }
 
 func (database *Database) Create(modelPtr Model) {
-	database.coreCreate(sqlOpt{}, modelPtr)
-}
-func (database *Database) CreateContext(ctx context.Context, modelPtr Model) {
-	database.coreCreate(sqlOpt{Context: ctx}, modelPtr)
-}
-func (database *Database) TxCreate(tx *Tx, modelPtr Model) {
-	database.coreCreate(sqlOpt{Tx: tx.core}, modelPtr)
-}
-func (database *Database) TxCreateContext(ctx context.Context, tx *Tx, modelPtr Model) {
-	database.coreCreate(sqlOpt{Tx: tx.core, Context: ctx}, modelPtr)
+	err := database.CoreCreate(SqlOpt{}, modelPtr)
+	if err != nil { panic(err) }
 }
 
-func (database *Database) coreDeleteQB(opt sqlOpt, modelPtr Model, qb QB) {
+func (database *Database) coreDeleteQB(opt SqlOpt, modelPtr Model, qb QB) {
 	_, isPtr := getPtrElem(modelPtr)
 	if !isPtr {
 		panic("db.DeleteQB() or db.TxDeleteQB()  arg `modelPtr` must be a ptr, eg: db.DeleteQB(&user, qb) db.TxDeleteQB(tx, &user, qb) ")
@@ -218,29 +197,29 @@ func (database *Database) coreDeleteQB(opt sqlOpt, modelPtr Model, qb QB) {
 	query, values := qb.BindModel(modelPtr).GetUpdate()
 	var result sql.Result
 	if opt.Tx != nil {
-		sqlResult, err := opt.Tx.ExecContext(opt.CtxOrBackground(),query, values...) ; ge.Check(err)
+		sqlResult, err := opt.Tx.core.ExecContext(opt.ctxOrTODO(),query, values...) ; ge.Check(err)
 		result = sqlResult
 	} else {
-		sqlResult, err := database.Core.ExecContext(opt.CtxOrBackground(),query, values...) ; ge.Check(err)
+		sqlResult, err := database.Core.ExecContext(opt.ctxOrTODO(),query, values...) ; ge.Check(err)
 		result = sqlResult
 	}
 	_, err := result.LastInsertId() ; ge.Check(err)
 }
 func (database *Database) DeleteQB(modelPtr Model, qb QB) {
-	database.coreDeleteQB(sqlOpt{}, modelPtr, qb)
+	database.coreDeleteQB(SqlOpt{}, modelPtr, qb)
 }
 func (database *Database) DeleteQBContext(ctx context.Context, modelPtr Model, qb QB) {
-	database.coreDeleteQB(sqlOpt{Context: ctx}, modelPtr, qb)
+	database.coreDeleteQB(SqlOpt{Context: ctx}, modelPtr, qb)
 }
 func (database *Database) TxDeleteQB(tx *Tx,modelPtr Model, qb QB) {
-	database.coreDeleteQB(sqlOpt{Tx: tx.core}, modelPtr, qb)
+	database.coreDeleteQB(SqlOpt{Tx: tx}, modelPtr, qb)
 }
 func (database *Database) TxDeleteQBContext(ctx context.Context, tx *Tx,modelPtr Model, qb QB) {
-	database.coreDeleteQB(sqlOpt{Tx: tx.core, Context:ctx}, modelPtr, qb)
+	database.coreDeleteQB(SqlOpt{Tx: tx, Context:ctx}, modelPtr, qb)
 }
 
 
-func (database *Database) coreDelete(opt sqlOpt, modelPtr Model) {
+func (database *Database) coreDelete(opt SqlOpt, modelPtr Model) {
 	rValue, isPtr := getPtrElem(modelPtr)
 	if !isPtr {
 		panic("db.Delete() or db.TxDelete()  arg `modelPtr` must be a ptr, eg: db.Delete(&user) db.TxDelete(tx, &user) ")
@@ -262,35 +241,25 @@ func (database *Database) coreDelete(opt sqlOpt, modelPtr Model) {
 	query, values := qb.BindModel(modelPtr).GetUpdate()
 	var result sql.Result
 	if opt.Tx != nil {
-		sqlResult, err := opt.Tx.ExecContext(opt.CtxOrBackground(),query, values...) ; ge.Check(err)
+		sqlResult, err := opt.Tx.core.ExecContext(opt.ctxOrTODO(),query, values...) ; ge.Check(err)
 		result = sqlResult
 	} else {
-		sqlResult, err := database.Core.ExecContext(opt.CtxOrBackground(),query, values...) ; ge.Check(err)
+		sqlResult, err := database.Core.ExecContext(opt.ctxOrTODO(),query, values...) ; ge.Check(err)
 		result = sqlResult
 	}
 	_, err := result.LastInsertId() ; ge.Check(err)
 }
 func (database *Database) Delete(modelPtr Model) {
-	database.coreDelete(sqlOpt{}, modelPtr)
+	database.coreDelete(SqlOpt{}, modelPtr)
 }
 func (database *Database) DeleteContext(ctx context.Context, modelPtr Model) {
-	database.coreDelete(sqlOpt{Context: ctx,}, modelPtr)
+	database.coreDelete(SqlOpt{Context: ctx,}, modelPtr)
 }
 func (database *Database) TxDelete(tx *Tx,modelPtr Model, qb QB) {
-	database.coreDelete(sqlOpt{Tx: tx.core}, modelPtr)
+	database.coreDelete(SqlOpt{Tx: tx}, modelPtr)
 }
 func (database *Database) TxDeleteContext(ctx context.Context, tx *Tx,modelPtr Model, qb QB) {
-	database.coreDelete(sqlOpt{Tx: tx.core, Context:ctx}, modelPtr)
-}
-
-func (database *Database) Update(modelPtr Model) {
-	database.coreUpdate(sqlOpt{}, modelPtr)
-}
-func (database *Database) UpdateContext(ctx context.Context, modelPtr Model) {
-	database.coreUpdate(sqlOpt{Context: ctx}, modelPtr)
-}
-func (database *Database) TxUpdate(tx *Tx, modelPtr Model) {
-	database.coreUpdate(sqlOpt{Tx: tx.core}, modelPtr)
+	database.coreDelete(SqlOpt{Tx: tx, Context:ctx}, modelPtr)
 }
 func getPtrElem(ptr interface{}) (value reflect.Value, isPtr bool) {
 	v := reflect.ValueOf(ptr)
@@ -302,28 +271,42 @@ func getPtrElem(ptr interface{}) (value reflect.Value, isPtr bool) {
 	isPtr = true
 	return
 }
-func (database *Database) coreUpdate (opt sqlOpt, modelPtr Model) {
+
+func (database *Database) baseUpdate (opt SqlOpt, modelPtr Model, useUpdateData bool, updateData Data) error {
 	rValue, isPtr := getPtrElem(modelPtr)
-	if !isPtr {
-		panic("db.Update() or db.TxUpdate()  arg `modelPtr` must be a ptr, eg: db.Update(&user) db.TxUpdate(tx, &user) ")
-	}
+	if !isPtr { panic("db.Update() or db.TxUpdate()  arg `modelPtr` must be a ptr, eg: db.Update(&user) db.TxUpdate(tx, &user) ") }
 	typeValue := reflect.TypeOf(modelPtr).Elem()
 	fieldLen := rValue.NumField()
-	updateData := map[Column]interface{}{}
 	var id interface{}
+	var findID bool
 	for i:=0;i<fieldLen;i++{
 		item := rValue.Field(i)
 		itemType := typeValue.Field(i)
-		dbName := itemType.Tag.Get("db")
+		dbName, hasDBName := itemType.Tag.Lookup("db")
+		if !hasDBName {
+			continue
+		}
+		if dbName == "" {
+			log.Print(`Maybe you forget set db:"name"` + itemType.Name)
+			continue
+		}
 		value := item.Interface()
 		if dbName == "id" {
 			if item.IsZero() {
-				panic(errors.New("db.Update(&model) or db.TxUpdate(&model) model.id is zero"))
+				panic(errors.New("update model.ID is zero"))
 			}
+			findID = true
 			id = value
 			continue
 		}
-		updateData[Column(dbName)] = value
+		if useUpdateData {
+			rValue.Set(reflect.ValueOf(updateData[Column(dbName)]))
+		} else {
+			updateData[Column(dbName)] = value
+		}
+	}
+	if !findID {
+		panic(errors.New("update not found id"))
 	}
 	updatedAtValue := rValue.FieldByName("UpdatedAt")
 	if updatedAtValue.IsValid() {
@@ -338,19 +321,56 @@ func (database *Database) coreUpdate (opt sqlOpt, modelPtr Model) {
 	}.BindModel(modelPtr).GetUpdate()
 	var result sql.Result
 	if opt.Tx != nil {
-		newResult, err := opt.Tx.ExecContext(opt.CtxOrBackground(),query, values...) ; ge.Check(err)
+		newResult, err := opt.Tx.core.ExecContext(opt.ctxOrTODO(),query, values...) ; if err != nil {return err}
 		result = newResult
 	} else {
-		newResult, err := database.Core.ExecContext(opt.CtxOrBackground(),query, values...) ; ge.Check(err)
+		newResult, err := database.Core.ExecContext(opt.ctxOrTODO(),query, values...) ; if err != nil {return err}
 		result = newResult
 	}
-	lastInsertID, err := result.LastInsertId() ; ge.Check(err)
+	lastInsertID, err := result.LastInsertId(); if err != nil {return err}
 	if  lastInsertID != 0 {
 		rValue.FieldByName("ID").SetInt(lastInsertID)
 	}
+	return nil
+}
+func (database *Database) UpdateData (modelPtr Model, data Data){
+	err := database.CoreUpdateData(SqlOpt{}, modelPtr, data)
+	if err != nil {panic(err)}
+}
+func (database *Database) CoreUpdateData (opt SqlOpt, modelPtr Model, data Data) error {
+	return database.baseUpdate(opt, modelPtr, true, data)
+}
+func (database *Database) Update(modelPtr Model) {
+	err := database.CoreUpdate(SqlOpt{}, modelPtr)
+	if err != nil {panic(err)}
+}
+func (database *Database) CoreUpdate (opt SqlOpt, modelPtr Model) error {
+	return database.baseUpdate(opt, modelPtr, false, nil)
 }
 
-func (database Database) Tx() *Tx {
-	tx, err := database.Core.Beginx() ; ge.Check(err)
-	return newTx(tx)
+func (database Database) Tx(transaction func(tx *Tx) error) error {
+	return database.CoreTx(context.Background(), nil, transaction)
+}
+func (database Database) CoreTx(ctx context.Context, options *sql.TxOptions, transaction func(tx *Tx) error ) error {
+	dbTx, err := database.Core.BeginTxx(ctx, options)
+	if err != nil {return err}
+	tx := newTx(dbTx)
+	var txErr error
+	defer func() {
+		r := recover()
+		if r != nil {
+			tx.Rollback()
+			panic(r)
+		} else {
+			if txErr == nil {
+				tx.Commit()
+			}
+		}
+	}()
+	txErr = transaction(tx)
+	if txErr != nil {
+		tx.Rollback()
+		return txErr
+	}
+	return nil
 }
