@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	f "github.com/og/gofree"
+	gconv "github.com/og/x/conv"
 	ge "github.com/og/x/error"
 	gtest "github.com/og/x/test"
 	"testing"
@@ -36,6 +37,20 @@ func (MasterMigrate) Migrate20201013140601CreateUser(mi f.Migrate) {
 			mi.Field("age").Int(11).DefaultInt(0),
 			mi.Field("is_super").Tinyint(1).DefaultInt(0),
 		}, mi.CUDTimestamp()...),
+		Key: nil,
+		Engine: mi.Engine().InnoDB,
+		Charset: mi.Charset().Utf8mb4,
+		Collate: mi.Utf8mb4_unicode_ci(),
+	})
+}
+func (MasterMigrate) Migrate20201016140601CreateUser(mi f.Migrate) {
+	mi.CreateTable(f.CreateTableQB{
+		TableName: "log",
+		PrimaryKey: "id",
+		Fields: []f.MigrateField{
+			mi.Field("id").Int(11).AutoIncrement(),
+			mi.Field("message").Varchar(20).DefaultString(""),
+		},
 		Key: nil,
 		Engine: mi.Engine().InnoDB,
 		Charset: mi.Charset().Utf8mb4,
@@ -119,6 +134,40 @@ func TestDB(t *testing.T) {
 		db.OneQB(&user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT")})
 		as.Equal(hasUser, true)
 		as.Equal(user.Name, "TXCOMMIT")
+	}
+	{
+		newLog := Log{Message: "abc"}
+		err := db.CoreCreate(f.SqlOpt{}, &newLog)
+		as.NoError(err)
+		as.Gt(int(newLog.ID), 0)
+	}
+	{
+		newLog := Log2{Message: "abc"}
+		err := db.CoreCreate(f.SqlOpt{}, &newLog)
+		as.NoError(err)
+		as.Gt(int(newLog.ID), 0)
+	}
+	{
+		newLog := Log3{Message: "abc"}
+		err := db.CoreCreate(f.SqlOpt{}, &newLog)
+		as.NoError(err)
+		idInt, err := gconv.StringInt(newLog.ID)
+		as.NoError(err)
+		as.Gt(idInt, 0)
+	}
+	{
+		newLog := Log4{Message: "abc"}
+		as.PanicError("Log4.ID type must be uint or int or string", func() {
+			err := db.CoreCreate(f.SqlOpt{}, &newLog)
+			if err != nil {panic(err)}
+		})
+	}
+	{
+		newLog := Log5{Message: "abc"}
+		as.PanicError(`dbAutoIncrement muse be dbAutoIncrement:"true" or dbAutoIncrement:"false" can not be dbAutoIncrement:"t"`, func() {
+			err := db.CoreCreate(f.SqlOpt{}, &newLog)
+			if err != nil {panic(err)}
+		})
 	}
 
 }

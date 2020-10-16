@@ -11,10 +11,7 @@ func NewColumn(column string) Column {
 func (c Column) String() string {
 	return string(c)
 }
-
-
-
-
+type AutoIncrement uint
 
 
 

@@ -18,6 +18,8 @@ type User struct {
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
 	DeletedAt sql.NullTime `db:"deleted_at"`
+	NotSQLField string
+	EmptyDBTag string `db:""`
 }
 func (User) TableName() string {
 	return "user"
@@ -42,4 +44,65 @@ func (User) Column() (col struct {
 	col.UpdatedAt = "updated_at"
 	col.DeletedAt = "deleted_at"
 	return
+}
+
+type Log struct {
+	ID uint `db:"id" dbAutoIncrement:"true"`
+	Message string `db:"message"`
+}
+func (Log) TableName() string {
+	return "log"
+}
+func (model Log) BeforeCreate() {
+
+}
+type Log2 struct {
+	ID int `db:"id"  dbAutoIncrement:"true"`
+	Message string `db:"message"`
+}
+func (Log2) TableName() string {
+	return "log"
+}
+func (model Log2) BeforeCreate() {
+
+}
+type Log3 struct {
+	ID string `db:"id"  dbAutoIncrement:"true"`
+	Message string `db:"message"`
+}
+func (Log3) TableName() string {
+	return "log"
+}
+func (model Log3) BeforeCreate() {
+
+}
+type Log4 struct {
+	ID bool `db:"id"  dbAutoIncrement:"true"`
+	Message string `db:"message"`
+}
+func (Log4) TableName() string {
+	return "log"
+}
+func (model Log4) BeforeCreate() {
+
+}
+type Log5 struct {
+	ID int `db:"id" dbAutoIncrement:"t"`
+	Message string `db:"message"`
+}
+func (Log5) TableName() string {
+	return "log"
+}
+func (model Log5) BeforeCreate() {
+
+}
+type Log6 struct {
+	ID int `db:"id" dbAutoIncrement:"false"`
+	Message string `db:"message"`
+}
+func (Log6) TableName() string {
+	return "log"
+}
+func (model Log6) BeforeCreate() {
+
 }

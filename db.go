@@ -6,6 +6,7 @@ import (
 	"errors"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	gconv "github.com/og/x/conv"
 	ge "github.com/og/x/error"
 	"log"
 	"reflect"
@@ -130,13 +131,12 @@ func (database *Database) coreListQB(opt SqlOpt, modelListPtr interface{}, qb QB
 }
 
 func (database *Database) CoreCreate(opt SqlOpt, modelPtr Model) error {
-	value, isPtr := getPtrElem(modelPtr)
-	if !isPtr {
-		panic("db.OneID() or db.OneQB()  arg `modelPtr` must be a ptr")
-	}
+	value, _ := getPtrElem(modelPtr)
 	modelPtr.BeforeCreate()
 	typeValue := reflect.TypeOf(modelPtr).Elem()
 	insertData := map[Column]interface{}{}
+	var idValue reflect.Value
+	var hasPrimaryKeyAutoIncrement bool
 	for i:=0;i<value.NumField();i++{
 		item := value.Field(i)
 		itemType := typeValue.Field(i)
@@ -148,19 +148,34 @@ func (database *Database) CoreCreate(opt SqlOpt, modelPtr Model) error {
 			log.Print(`Maybe you forget set db:"name"` + itemType.Name)
 			continue
 		}
+		if dbName == "id" {
+			idValue = item
+			autoIncrementValue, has := itemType.Tag.Lookup("dbAutoIncrement")
+			if has {
+				switch autoIncrementValue {
+				case "true":
+					hasPrimaryKeyAutoIncrement = true
+					continue
+				case "false":
+				default:
+					panic(errors.New(`dbAutoIncrement muse be dbAutoIncrement:"true" or dbAutoIncrement:"false" can not be dbAutoIncrement:"`+ autoIncrementValue + `"`))
+				}
+			}
+		}
 		insertData[Column(dbName)] = item.Interface()
 	}
+	nowTime := time.Now()
 	createdAtValue := value.FieldByName("CreatedAt")
 	if createdAtValue.IsValid() {
 		createdAtType, _ := typeValue.FieldByName("CreatedAt")
-		insertData[Column(createdAtType.Tag.Get("db"))] = time.Now()
-		createdAtValue.Set(reflect.ValueOf(time.Now()))
+		insertData[Column(createdAtType.Tag.Get("db"))] = nowTime
+		createdAtValue.Set(reflect.ValueOf(nowTime))
 	}
 	updatedAtValue := value.FieldByName("UpdatedAt")
 	if updatedAtValue.IsValid() {
 		updatedAtType, _ := typeValue.FieldByName("UpdatedAt")
-		insertData[Column(updatedAtType.Tag.Get("db"))] = time.Now()
-		updatedAtValue.Set(reflect.ValueOf(time.Now()))
+		insertData[Column(updatedAtType.Tag.Get("db"))] = nowTime
+		updatedAtValue.Set(reflect.ValueOf(nowTime))
 	}
 	query, values := QB{
 		Insert: insertData,
@@ -173,9 +188,21 @@ func (database *Database) CoreCreate(opt SqlOpt, modelPtr Model) error {
 		newResult, err := database.Core.ExecContext(opt.ctxOrTODO(),query, values...) ; if err != nil {return err}
 		result = newResult
 	}
-	lastInsertID, err := result.LastInsertId() ; ge.Check(err)
-	if  lastInsertID != 0 {
-		value.FieldByName("ID").SetInt(lastInsertID)
+	if hasPrimaryKeyAutoIncrement {
+		lastInsertID, err := result.LastInsertId() ; ge.Check(err)
+		if lastInsertID == 0 {
+			panic(errors.New(database.DataSourceName().DriverName + " " + modelPtr.TableName() + " does not support AutoIncrement or LastInsertId()"))
+		}
+		switch idValue.Type().Kind() {
+		case reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
+			idValue.SetUint(uint64(lastInsertID))
+		case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64:
+			idValue.SetInt(lastInsertID)
+		case reflect.String:
+			idValue.SetString(gconv.Int64String(lastInsertID))
+		default:
+			panic(errors.New(typeValue.Name() + ".ID type must be uint or int or string"))
+		}
 	}
 	return nil
 }

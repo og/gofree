@@ -17,6 +17,9 @@ func scanModelMakeSQLSelect(modelType reflect.Type, qb *QB)  {
 			if !hasDBTag {
 				continue
 			}
+			if dbTag == "" {
+				continue
+			}
 			selectList = append(selectList, dbTag)
 		}
 		qb.Select = StringsToColumns(selectList)
