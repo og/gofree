@@ -165,17 +165,38 @@ func (database *Database) CoreCreate(opt SqlOpt, modelPtr Model) error {
 		insertData[Column(dbName)] = item.Interface()
 	}
 	nowTime := time.Now()
-	createdAtValue := value.FieldByName("CreatedAt")
-	if createdAtValue.IsValid() {
-		createdAtType, _ := typeValue.FieldByName("CreatedAt")
-		insertData[Column(createdAtType.Tag.Get("db"))] = nowTime
-		createdAtValue.Set(reflect.ValueOf(nowTime))
+	{
+		createdAtValue := value.FieldByName("CreatedAt")
+		if createdAtValue.IsValid() {
+			createdAtType, _ := typeValue.FieldByName("CreatedAt")
+			timeValue := nowTime
+			{
+				createdAtTime := createdAtValue.Interface().(time.Time)
+				if createdAtTime.IsZero() {
+					createdAtValue.Set(reflect.ValueOf(timeValue))
+				} else {
+					timeValue = createdAtTime
+				}
+			}
+			insertData[Column(createdAtType.Tag.Get("db"))] = timeValue
+
+		}
 	}
-	updatedAtValue := value.FieldByName("UpdatedAt")
-	if updatedAtValue.IsValid() {
-		updatedAtType, _ := typeValue.FieldByName("UpdatedAt")
-		insertData[Column(updatedAtType.Tag.Get("db"))] = nowTime
-		updatedAtValue.Set(reflect.ValueOf(nowTime))
+	{
+		updatedAtValue := value.FieldByName("UpdatedAt")
+		if updatedAtValue.IsValid() {
+			updatedAtType, _ := typeValue.FieldByName("UpdatedAt")
+			timeValue := nowTime
+			{
+				updatedAtTime := updatedAtValue.Interface().(time.Time)
+				if updatedAtTime.IsZero() {
+					updatedAtValue.Set(reflect.ValueOf(timeValue))
+				} else {
+					timeValue = updatedAtTime
+				}
+			}
+			insertData[Column(updatedAtType.Tag.Get("db"))] = timeValue
+		}
 	}
 	query, values := QB{
 		Insert: insertData,
