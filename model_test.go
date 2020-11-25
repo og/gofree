@@ -29,6 +29,23 @@ func (model *User) BeforeCreate() {
 		model.ID = IDUser(f.UUID())
 	}
 }
+type IDUserLocation string
+type UserLocation struct {
+	ID IDUserLocation `db:"id"`
+	Point f.Point `db:"point"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+func (UserLocation) TableName() string {
+	return "user_location"
+}
+func (model *UserLocation) BeforeCreate() {
+	if model.ID == "" {
+		model.ID = IDUserLocation(f.UUID())
+	}
+}
+
 func (User) Column() (col struct {
 	ID f.Column
 	Name f.Column

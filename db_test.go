@@ -57,6 +57,21 @@ func (MasterMigrate) Migrate20201016140601CreateUser(mi f.Migrate) {
 		Collate: mi.Utf8mb4_unicode_ci(),
 	})
 }
+func (MasterMigrate) Migrate20201102152223CreateUserLocation(mi f.Migrate) {
+	mi.CreateTable(f.CreateTableQB{
+		TableName: "user_location",
+		PrimaryKey: "id",
+		Fields: []f.MigrateField{
+			mi.Field("id").Char(36),
+			mi.Field("point").Type("POINT", 0),
+		},
+		Key: nil,
+		Engine: mi.Engine().InnoDB,
+		Charset: mi.Charset().Utf8mb4,
+		Collate: mi.Utf8mb4_unicode_ci(),
+	})
+}
+
 
 func TestDB(t *testing.T) {
 	as := gtest.NewAS(t)

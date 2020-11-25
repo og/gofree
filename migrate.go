@@ -204,6 +204,11 @@ type MigrateField struct {
 	commit string
 	raw string
 }
+func (mi MigrateField) Type(columnType string, size int) MigrateField {
+	mi.size = size
+	mi.fieldType = columnType
+	return mi
+}
 func (mi MigrateField) Int(size int) MigrateField {
 	mi.size = size
 	mi.fieldType = "int"

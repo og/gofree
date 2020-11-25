@@ -671,6 +671,13 @@ func TestQB_Sql(t *testing.T) {
 	}
 	{
 		sql, values := f.QB{
+			Where: f.And("gift_id", f.In([]string{})),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (NULL) AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{nil}, values)
+	}
+	{
+		sql, values := f.QB{
 			Where: f.And(
 				"create_at", f.TimeRange(gtime.Range{
 					Type:   gtime.Range{}.Type.Enum().Day,
