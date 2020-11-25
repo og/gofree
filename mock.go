@@ -53,6 +53,6 @@ func mockTruncateTable(db Database, tableValue reflect.Value, existTruncateTable
 			panic(errors.New("mock.Tables tableName:" + tableName + " already reset and mock"))
 		}
 		existTruncateTableName[tableName] = true
-		_, err := db.Core.Exec("truncate table `" + tableName + "`");
+		_, err := db.DB.Exec("truncate table `" + tableName + "`");
 		ge.Check(err)
 }

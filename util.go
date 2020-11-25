@@ -77,3 +77,13 @@ func (v stringQueue) Join(separator string) string {
 	return strings.Join(v.Value, separator)
 }
 
+func getPtrElem(ptr interface{}) (value reflect.Value, isPtr bool) {
+	v := reflect.ValueOf(ptr)
+	if v.Kind() != reflect.Ptr {
+		isPtr = false
+		return
+	}
+	value = v.Elem()
+	isPtr = true
+	return
+}

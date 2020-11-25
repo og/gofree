@@ -20,6 +20,12 @@ type Order struct {
 type Group struct {
 	Column Column
 }
+type SelectLock string
+func (s SelectLock) String() string {
+	return string(s)
+}
+const FORSHARE SelectLock = "FOR SHARE"
+const FORUPDATE SelectLock = "FOR UPDATE"
 type QB struct {
 	Table string
 	Select []Column
@@ -28,6 +34,7 @@ type QB struct {
 	Limit int
 	Order []Order
 	Group []Column
+	Lock SelectLock
 	SoftDelete Column
 	Insert Data
 	Update Data
@@ -281,6 +288,12 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 		if qb.Offset != 0 && !qb.Count {
 			sqlList.Push("OFFSET ?")
 			sqlValues = append(sqlValues, qb.Offset)
+		}
+	}
+	{
+		// select lock
+		if len(qb.Lock) == 0 {
+			sqlList.Push(qb.Lock.String())
 		}
 	}
 	sql = sqlList.Join(" ")

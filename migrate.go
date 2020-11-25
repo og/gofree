@@ -22,7 +22,7 @@ CREATE TABLE  IF NOT EXISTS gofree_migrations (
 `
 
 func (mi Migrate) Init() {
-	_, err := mi.db.Core.Exec(createMigrateSQL)
+	_, err := mi.db.DB.Exec(createMigrateSQL)
 	mi.CheckError(err, createMigrateSQL)
 }
 func ExecMigrate(db Database, ptr interface{}) {
@@ -46,7 +46,7 @@ func ExecMigrate(db Database, ptr interface{}) {
 		}
 	}
 	for _, methodName := range methodNames {
-		row, err := db.Core.Queryx(`SELECT count(*) FROM gofree_migrations WHERE name = ?`, methodName)
+		row, err := db.DB.Queryx(`SELECT count(*) FROM gofree_migrations WHERE name = ?`, methodName)
 		defer row.Close()
 		if err != nil {
 			panic(err)
@@ -61,7 +61,7 @@ func ExecMigrate(db Database, ptr interface{}) {
 		}
 		log.Print("[gofree migrate]exec: " +methodName)
 		rValue.MethodByName(methodName).Call([]reflect.Value{miValue})
-		_, err = db.Core.Exec("INSERT INTO gofree_migrations (name) VALUES(?)", methodName) ; ge.Check(err)
+		_, err = db.DB.Exec("INSERT INTO gofree_migrations (name) VALUES(?)", methodName) ; ge.Check(err)
 		log.Printf("[gofree migrate]done: " +methodName)
 	}
 }
@@ -309,7 +309,7 @@ func (mi MigrateField) Text() MigrateField {
 }
 func (Migrate) MigrateName(name string){}
 func (mi Migrate) Exec(sql string, values... interface{}) {
-	_, err := mi.db.Core.Exec(sql, values...)
+	_, err := mi.db.DB.Exec(sql, values...)
 	mi.CheckError(err, sql)
 }
 func (mi Migrate) CheckError(err error, sql string) {
@@ -320,7 +320,7 @@ func (mi Migrate) CheckError(err error, sql string) {
 }
 func (mi Migrate) CreateTable(qb CreateTableQB) {
 	sql := qb.ToSQL()
-	_, err := mi.db.Core.Exec(sql) ; mi.CheckError(err, sql)
+	_, err := mi.db.DB.Exec(sql) ; mi.CheckError(err, sql)
 }
 type Alter struct {
 	migrateField MigrateField

@@ -76,7 +76,7 @@ func (MasterMigrate) Migrate20201102152223CreateUserLocation(mi f.Migrate) {
 func TestDB(t *testing.T) {
 	as := gtest.NewAS(t)
 	f.ExecMigrate(db, &MasterMigrate{})
-	_, err := db.Core.Exec(`truncate table user`) ; ge.Check(err)
+	_, err := db.DB.Exec(`truncate table user`) ; ge.Check(err)
 	db.Create(&User{
 		Name:      "nimo",
 		Age:       18,
