@@ -1,6 +1,7 @@
 package f
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/og/x/error"
@@ -30,7 +31,7 @@ func ResetAndMock(db Database, mock Mock) {
 		// truncate table
 		for index := 0;index< tableValue.Len();index ++ {
 			model := tableValue.Index(index).Addr().Interface()
-			db.Create(model.(Model))
+			ge.Check(db.Create(context.TODO(), model.(Model)))
 		}
 	}
 }
@@ -53,6 +54,6 @@ func mockTruncateTable(db Database, tableValue reflect.Value, existTruncateTable
 			panic(errors.New("mock.Tables tableName:" + tableName + " already reset and mock"))
 		}
 		existTruncateTableName[tableName] = true
-		_, err := db.DB.Exec("truncate table `" + tableName + "`");
+		_, err := db.Core.Exec("truncate table `" + tableName + "`");
 		ge.Check(err)
 }

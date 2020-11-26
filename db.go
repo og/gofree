@@ -14,14 +14,13 @@ import (
 )
 
 type Database struct {
-	*sqlx.DB
+	Core *sqlx.DB
 	onlyReadDataSourceName DataSourceName
 }
 type Storager interface {
 	QueryRowxContext(ctx context.Context, query string, args ...interface{}) *sqlx.Row
 	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
-	BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error)
 }
 func (database Database) DataSourceName () DataSourceName {
 	return database.onlyReadDataSourceName
@@ -31,16 +30,16 @@ func NewDatabase(dataSourceName DataSourceName) (database Database, err error) {
 	if err != nil {
 		return database, err
 	}
-	database = Database{DB: db}
+	database = Database{Core: db}
 	database.onlyReadDataSourceName = dataSourceName
 	return database, nil
 }
 
 func (db *Database) OneQB(ctx context.Context, modelPtr Model, has *bool, qb QB) error {
-	return coreOneQB(ctx, db, modelPtr, has, qb)
+	return coreOneQB(ctx, db.Core, modelPtr, has, qb)
 }
 func (tx *Tx) OneQB(ctx context.Context, modelPtr Model, has *bool, qb QB) error {
-	return coreOneQB(ctx, tx, modelPtr, has, qb)
+	return coreOneQB(ctx, tx.Core, modelPtr, has, qb)
 }
 func coreOneQB(ctx context.Context, storage Storager, modelPtr Model, has *bool, qb QB) error {
 	qb.Limit = 1
@@ -54,27 +53,27 @@ func coreOneQB(ctx context.Context, storage Storager, modelPtr Model, has *bool,
 	return nil
 }
 func (db *Database) OneID(ctx context.Context, modelPtr Model, has *bool, id interface{}) error {
-	return coreOneQB(ctx, db, modelPtr, has, QB{
+	return coreOneQB(ctx, db.Core, modelPtr, has, QB{
 		Where:And("id", id),
 	})
 }
 func (tx *Tx) OneID(ctx context.Context, modelPtr Model, has *bool, id interface{}) error {
-	return coreOneQB(ctx, tx, modelPtr, has, QB{
+	return coreOneQB(ctx, tx.Core, modelPtr, has, QB{
 		Where:And("id", id),
 	})
 }
 func (tx *Tx) OneIDLock(ctx context.Context, modelPtr Model, has *bool, id interface{}, lock SelectLock) error {
-	return coreOneQB(ctx, tx, modelPtr, has, QB{
+	return coreOneQB(ctx, tx.Core, modelPtr, has, QB{
 		Where:And("id", id),
 		Lock: lock,
 	})
 }
 
 func (db *Database) Count(ctx context.Context, modelPtr Model, qb QB) (count int, err error) {
-	return coreCountQB(ctx, db, modelPtr, qb)
+	return coreCountQB(ctx, db.Core, modelPtr, qb)
 }
 func (tx *Tx) Count(ctx context.Context, modelPtr Model, qb QB) (count int, err error) {
-	return coreCountQB(ctx, tx, modelPtr, qb)
+	return coreCountQB(ctx, tx.Core, modelPtr, qb)
 }
 func coreCountQB(ctx context.Context, storage Storager, modelPtr Model, qb QB) (count int, err error)  {
 	qb.Count = true
@@ -86,10 +85,10 @@ func coreCountQB(ctx context.Context, storage Storager, modelPtr Model, qb QB) (
 }
 
 func (db *Database) ListQB(ctx context.Context, modelListPtr interface{}, qb QB) error {
-	return coreListQB(ctx, db, modelListPtr, qb)
+	return coreListQB(ctx, db.Core, modelListPtr, qb)
 }
 func (tx *Tx) ListQB(ctx context.Context, modelListPtr interface{}, qb QB) error {
-	return coreListQB(ctx, tx, modelListPtr, qb)
+	return coreListQB(ctx, tx.Core, modelListPtr, qb)
 }
 func coreListQB(ctx context.Context, storage Storager, modelListPtr interface{}, qb QB) error {
 	elementType := reflect.TypeOf(modelListPtr).Elem()
@@ -103,10 +102,10 @@ func coreListQB(ctx context.Context, storage Storager, modelListPtr interface{},
 	return storage.SelectContext(ctx,modelListPtr, query, values...)
 }
 func (db *Database) Create(ctx context.Context, modelPtr Model) error {
-	return coreCreate(ctx, db , modelPtr)
+	return coreCreate(ctx, db.Core , modelPtr)
 }
 func (tx *Tx) Create(ctx context.Context, modelPtr Model) error {
-	return coreCreate(ctx, tx , modelPtr)
+	return coreCreate(ctx, tx.Core , modelPtr)
 }
 func coreCreate(ctx context.Context, storage Storager,modelPtr Model) error {
 	value, _ := getPtrElem(modelPtr)
@@ -201,10 +200,10 @@ func coreCreate(ctx context.Context, storage Storager,modelPtr Model) error {
 }
 
 func (db *Database) DeleteQB(ctx context.Context, modelPtr Model, qb QB) error {
-	return coreDeleteQB(ctx, db, modelPtr, qb)
+	return coreDeleteQB(ctx, db.Core, modelPtr, qb)
 }
 func (tx *Tx) DeleteQB(ctx context.Context, modelPtr Model, qb QB) error {
-	return coreDeleteQB(ctx, tx, modelPtr, qb)
+	return coreDeleteQB(ctx, tx.Core, modelPtr, qb)
 }
 func coreDeleteQB(ctx context.Context, storage Storager, modelPtr Model, qb QB) error {
 	_, isPtr := getPtrElem(modelPtr)
@@ -222,10 +221,10 @@ func coreDeleteQB(ctx context.Context, storage Storager, modelPtr Model, qb QB) 
 }
 
 func (db *Database) Delete(ctx context.Context, modelPtr Model) error {
-	return coreDelete(ctx, db, modelPtr)
+	return coreDelete(ctx, db.Core, modelPtr)
 }
 func (tx *Tx) Delete(ctx context.Context, modelPtr Model) error {
-	return coreDelete(ctx, tx, modelPtr)
+	return coreDelete(ctx, tx.Core, modelPtr)
 }
 func  coreDelete(ctx context.Context, storage Storager, modelPtr Model) (error) {
 	rValue, isPtr := getPtrElem(modelPtr)
@@ -250,16 +249,16 @@ func  coreDelete(ctx context.Context, storage Storager, modelPtr Model) (error) 
 }
 
 func (db *Database) Update(ctx context.Context,  modelPtr Model) error {
-	return coreUpdate(ctx, db, modelPtr, false, nil)
+	return coreUpdate(ctx, db.Core, modelPtr, false, nil)
 }
 func (tx *Tx) Update(ctx context.Context,  modelPtr Model) error {
-	return coreUpdate(ctx, tx, modelPtr, false, nil)
+	return coreUpdate(ctx, tx.Core, modelPtr, false, nil)
 }
 func (db *Database) UpdateData(ctx context.Context,  modelPtr Model, data Data) error {
-	return coreUpdate(ctx, db, modelPtr, true, data)
+	return coreUpdate(ctx, db.Core, modelPtr, true, data)
 }
 func (tx *Tx) UpdateData(ctx context.Context,  modelPtr Model, data Data) error {
-	return coreUpdate(ctx, tx, modelPtr, true, data)
+	return coreUpdate(ctx, tx.Core, modelPtr, true, data)
 }
 func coreUpdate (ctx context.Context, storage Storager, modelPtr Model, useUpdateData bool, updateData Data) error {
 	rValue, isPtr := getPtrElem(modelPtr)
@@ -312,21 +311,24 @@ func coreUpdate (ctx context.Context, storage Storager, modelPtr Model, useUpdat
 	_, err = result.LastInsertId(); if err != nil {return err}
 	return nil
 }
-func coreTx(ctx context.Context, storage Storager, opts *sql.TxOptions, transaction func(tx *Tx) error) error {
-	tx, err := storage.BeginTxx(ctx, opts) ; if err != nil {return err}
+func (db *Database) Transaction(ctx context.Context, transaction func(ftx *Tx) error) (error) {
+	return db.TransactionOpts(ctx, nil, transaction)
+}
+func (db *Database) TransactionOpts(ctx context.Context, opts *sql.TxOptions, transaction func(*Tx) error) (txError error) {
+	tx, err := db.Core.BeginTxx(ctx, opts) ; if err != nil {return err}
 	ftx := newTx(tx)
 	defer func() {
 		r := recover()
 		if r != nil {
-			ftx.Rollback()
-		} else {
-			ftx.Commit()
+			ftx.rollback()
+			panic(r)
 		}
 	}()
 	err = transaction(ftx)
 	if err != nil {
-		ftx.Rollback()
+		ge.Check(ftx.rollback())
 		return err
+	} else {
+		return ftx.commit()
 	}
-	return nil
 }

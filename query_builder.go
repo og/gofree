@@ -292,7 +292,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 	}
 	{
 		// select lock
-		if len(qb.Lock) == 0 {
+		if len(qb.Lock) != 0 {
 			sqlList.Push(qb.Lock.String())
 		}
 	}

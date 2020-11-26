@@ -22,7 +22,7 @@ func init () {
 		Port:       "3306",
 		DB:         "test_gofree",
 	})
-	if err != nil {panic(err)}
+	ge.Check(err)
 }
 type MasterMigrate struct {
 
@@ -76,18 +76,19 @@ func (MasterMigrate) Migrate20201102152223CreateUserLocation(mi f.Migrate) {
 func TestDB(t *testing.T) {
 	as := gtest.NewAS(t)
 	f.ExecMigrate(db, &MasterMigrate{})
-	_, err := db.DB.Exec(`truncate table user`) ; ge.Check(err)
-	db.Create(&User{
+	_, err := db.Core.Exec(`truncate table user`) ; ge.Check(err)
+	ctx := context.Background()
+	ge.Check(db.Create(ctx,&User{
 		Name:      "nimo",
 		Age:       18,
 		IsSuper:   true,
-	})
+	}))
 	var user User
 	var hasUser bool
-	db.OneQB(&user, &hasUser, f.QB{
+	ge.Check(db.OneQB(ctx, &user, &hasUser, f.QB{
 		Where:      f.And(user.Column().Name, "nimo"),
 		Check: []string{"SELECT `id`, `name`, `age`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL LIMIT ?"},
-	})
+	}))
 	as.Equal(len(user.ID), 36)
 	as.Equal(user.Name, "nimo")
 	as.Equal(user.Age, 18)
@@ -98,9 +99,7 @@ func TestDB(t *testing.T) {
 	as.True(user.UpdatedAt.Before(time.Now().Add(time.Second)))
 	{
 		ctx ,_ := context.WithTimeout(context.Background(), time.Nanosecond)
-		err = db.CoreCreate(f.SqlOpt{
-			Context: ctx,
-		}, &User{Name:"gofree"})
+		err = db.Create(ctx, &User{Name:"gofree"})
 		as.Error(err, context.DeadlineExceeded)
 		var createError error
 		select {
@@ -112,14 +111,12 @@ func TestDB(t *testing.T) {
 		as.Error(createError, context.DeadlineExceeded)
 	}
 	{
-		err = db.Tx(func(tx *f.Tx) error {
-			ge.Check(db.CoreCreate(f.SqlOpt{
-				Tx: tx,
-			}, &User{
+		err = db.Transaction(ctx, func(tx *f.Tx) error {
+			ge.Check(tx.Create(ctx, &User{
 				Name: "TXFAIL",
 			}))
 			var hasUser bool
-			err = db.CoreOneQB(f.SqlOpt{Tx:tx,}, &user, &hasUser, f.QB{
+			err = tx.OneQB(ctx, &user, &hasUser, f.QB{
 				Where:      f.And(user.Column().Name, "TXFAIL"),
 			})
 			as.NoError(err)
@@ -130,41 +127,55 @@ func TestDB(t *testing.T) {
 		as.ErrorString(err, "some error")
 		user := User{}
 		var hasUser bool
-		db.OneQB(&user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXFAIL")})
+		ge.Check(db.OneQB(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXFAIL")}))
 		as.Equal(hasUser, false)
 		as.Equal(user.ID, IDUser(""))
 	}
 	{
-		err = db.Tx(func(tx *f.Tx) error {
-			ge.Check(db.CoreCreate(f.SqlOpt{
-				Tx: tx,
-			}, &User{
+		err := db.Transaction(ctx, func(tx *f.Tx) error {
+			return tx.Create(ctx, &User{
 				Name: "TXCOMMIT",
-			}))
-			return nil
+			})
 		})
 		as.NoError(err)
 		user := User{}
 		var hasUser bool
-		db.OneQB(&user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT")})
+		ge.Check(db.OneQB(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT")}))
 		as.Equal(hasUser, true)
 		as.Equal(user.Name, "TXCOMMIT")
 	}
 	{
+		panicValue := as.Panic(func() {
+			err := db.Transaction(ctx, func(tx *f.Tx) error {
+				ge.Check(tx.Create(ctx, &User{
+					Name: "TXCOMMIT PANIC",
+				}))
+				panic(errors.New("test panic"))
+			})
+			_=err
+		})
+		err := panicValue.(error)
+		as.ErrorString(err, "test panic")
+		user := User{}
+		var hasUser bool
+		ge.Check(db.OneQB(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT PANIC")}))
+		as.Equal(hasUser, false)
+	}
+	{
 		newLog := Log{Message: "abc"}
-		err := db.CoreCreate(f.SqlOpt{}, &newLog)
+		err := db.Create(ctx, &newLog)
 		as.NoError(err)
 		as.Gt(int(newLog.ID), 0)
 	}
 	{
 		newLog := Log2{Message: "abc"}
-		err := db.CoreCreate(f.SqlOpt{}, &newLog)
+		err := db.Create(ctx, &newLog)
 		as.NoError(err)
 		as.Gt(int(newLog.ID), 0)
 	}
 	{
 		newLog := Log3{Message: "abc"}
-		err := db.CoreCreate(f.SqlOpt{}, &newLog)
+		err := db.Create(ctx, &newLog)
 		as.NoError(err)
 		idInt, err := gconv.StringInt(newLog.ID)
 		as.NoError(err)
@@ -173,14 +184,14 @@ func TestDB(t *testing.T) {
 	{
 		newLog := Log4{Message: "abc"}
 		as.PanicError("Log4.ID type must be uint or int or string", func() {
-			err := db.CoreCreate(f.SqlOpt{}, &newLog)
+			err := db.Create(ctx, &newLog)
 			if err != nil {panic(err)}
 		})
 	}
 	{
 		newLog := Log5{Message: "abc"}
 		as.PanicError(`dbAutoIncrement muse be dbAutoIncrement:"true" or dbAutoIncrement:"false" can not be dbAutoIncrement:"t"`, func() {
-			err := db.CoreCreate(f.SqlOpt{}, &newLog)
+			err := db.Create(ctx, &newLog)
 			if err != nil {panic(err)}
 		})
 	}

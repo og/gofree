@@ -674,7 +674,7 @@ func TestQB_Sql(t *testing.T) {
 			Where: f.And("gift_id", f.In([]string{})),
 		}.BindModel(&User{}).GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `gift_id` IN (NULL) AND `deleted_at` IS NULL", sql)
-		assert.Equal(t, []interface{}{nil}, values)
+		assert.Equal(t, []interface{}(nil), values)
 	}
 	{
 		sql, values := f.QB{
@@ -834,6 +834,28 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ?", sql)
+		assert.Equal(t, []interface{}{"nimo"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Table: "user",
+			Where:
+			f.And("user", f.IgnoreFilter()).
+				And("name", "nimo"),
+			Lock: f.FORSHARE,
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ? FOR SHARE", sql)
+		assert.Equal(t, []interface{}{"nimo"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Table: "user",
+			Where:
+			f.And("user", f.IgnoreFilter()).
+				And("name", "nimo"),
+			Lock: f.FORUPDATE,
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ? FOR UPDATE", sql)
 		assert.Equal(t, []interface{}{"nimo"}, values)
 	}
 }
