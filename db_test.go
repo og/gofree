@@ -134,15 +134,15 @@ func TestDB(t *testing.T) {
 	{
 		err := db.Transaction(ctx, func(tx *f.Tx) error {
 			return tx.Create(ctx, &User{
-				Name: "TXCOMMIT",
+				Name: "TXCOMMIT SUCCESS",
 			})
 		})
 		as.NoError(err)
 		user := User{}
 		var hasUser bool
-		ge.Check(db.OneQB(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT")}))
+		ge.Check(db.OneQB(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT SUCCESS")}))
 		as.Equal(hasUser, true)
-		as.Equal(user.Name, "TXCOMMIT")
+		as.Equal(user.Name, "TXCOMMIT SUCCESS")
 	}
 	{
 		panicValue := as.Panic(func() {
@@ -159,6 +159,19 @@ func TestDB(t *testing.T) {
 		user := User{}
 		var hasUser bool
 		ge.Check(db.OneQB(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT PANIC")}))
+		as.Equal(hasUser, false)
+	}
+	{
+		err := db.Transaction(ctx, func(tx *f.Tx) error {
+			ge.Check(tx.Create(ctx, &User{
+				Name: "TXCOMMIT ROLLBACK",
+			}))
+			return tx.Rollback()
+		})
+		as.NoError(err)
+		user := User{}
+		var hasUser bool
+		ge.Check(db.OneQB(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT ROLLBACK")}))
 		as.Equal(hasUser, false)
 	}
 	{

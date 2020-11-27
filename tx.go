@@ -13,7 +13,7 @@ type Tx struct {
 	Core *sqlx.Tx
 }
 
-func (tx *Tx) rollback() error {
+func (tx *Tx) Rollback() error {
 	err := tx.Core.Rollback()
 	if errors.Is(err, sql.ErrTxDone) {
 		// 忽略 tx done

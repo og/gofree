@@ -315,20 +315,20 @@ func (db *Database) Transaction(ctx context.Context, transaction func(ftx *Tx) e
 	return db.TransactionOpts(ctx, nil, transaction)
 }
 func (db *Database) TransactionOpts(ctx context.Context, opts *sql.TxOptions, transaction func(*Tx) error) (txError error) {
-	tx, err := db.Core.BeginTxx(ctx, opts) ; if err != nil {return err}
-	ftx := newTx(tx)
+	sqlxtx, err := db.Core.BeginTxx(ctx, opts) ; if err != nil {return err}
+	tx := newTx(sqlxtx)
 	defer func() {
 		r := recover()
 		if r != nil {
-			ftx.rollback()
+			rollbackErr := tx.Rollback() ; _= rollbackErr // 此时可以忽略 rollback 的错误
 			panic(r)
 		}
 	}()
-	err = transaction(ftx)
+	err = transaction(tx)
 	if err != nil {
-		ge.Check(ftx.rollback())
+		ge.Check(tx.Rollback())
 		return err
 	} else {
-		return ftx.commit()
+		return tx.commit()
 	}
 }
