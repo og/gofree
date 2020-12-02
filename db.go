@@ -332,3 +332,6 @@ func (db *Database) TransactionOpts(ctx context.Context, opts *sql.TxOptions, tr
 		return tx.commit()
 	}
 }
+func (db *Database) Close() error {
+	return db.Core.Close()
+}
