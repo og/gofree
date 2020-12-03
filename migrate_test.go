@@ -3,6 +3,7 @@ package f_test
 import (
 	f "github.com/og/gofree"
 	gtest "github.com/og/x/test"
+	"log"
 	"testing"
 )
 
@@ -11,7 +12,7 @@ func TestCreateTableQB_ToSQL(t *testing.T) {
 	mi := f.Migrate{}
 	qb := f.CreateTableQB{
 		TableName: "user",
-		PrimaryKey: "id",
+		PrimaryKey: []string{"id","order_id"},
 		Fields: append([]f.MigrateField{
 			mi.Field("id").Char(36).DefaultString(""),
 			mi.Field("name").Varchar(20).DefaultString(""),
@@ -23,6 +24,7 @@ func TestCreateTableQB_ToSQL(t *testing.T) {
 		Charset: mi.Charset().Utf8mb4,
 		Collate: mi.Utf8mb4_unicode_ci(),
 	}
+	log.Print(qb.ToSQL())
 	_=qb
 	_=as
 }

@@ -78,7 +78,7 @@ type MigrateCollate string
 func (collate MigrateCollate) String() string {return string(collate)}
 type CreateTableQB struct {
 	TableName string
-	PrimaryKey string
+	PrimaryKey []string
 	Fields []MigrateField
 	UniqueKey map[string][]string
 	Key map[string][]string
@@ -146,10 +146,10 @@ func (qb CreateTableQB) ToSQL() string {
 		}
 		sq.Push(",")
 	}
-	if qb.PrimaryKey == "" {
+	if len(qb.PrimaryKey) == 0 {
 		panic(errors.New("your must set PRIMARY KEY "))
 	}
-	sq.Push(newLine, "  PRIMARY KEY (`", qb.PrimaryKey, "`),")
+	sq.Push(newLine, "  PRIMARY KEY (`", strings.Join(qb.PrimaryKey, "`,`"), "`),")
 	for key, values := range qb.UniqueKey {
 		sq.Push(newLine, "  UNIQUE KEY ", "`", key, "`", " (`" , strings.Join(values, "`,`") ,"`),")
 	}

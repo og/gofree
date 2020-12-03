@@ -30,7 +30,7 @@ type MasterMigrate struct {
 func (MasterMigrate) Migrate20201013140601CreateUser(mi f.Migrate) {
 	mi.CreateTable(f.CreateTableQB{
 		TableName: "user",
-		PrimaryKey: "id",
+		PrimaryKey: []string{"id"},
 		Fields: append([]f.MigrateField{
 			mi.Field("id").Char(36).DefaultString(""),
 			mi.Field("name").Varchar(20).DefaultString(""),
@@ -46,7 +46,7 @@ func (MasterMigrate) Migrate20201013140601CreateUser(mi f.Migrate) {
 func (MasterMigrate) Migrate20201016140601CreateUser(mi f.Migrate) {
 	mi.CreateTable(f.CreateTableQB{
 		TableName: "log",
-		PrimaryKey: "id",
+		PrimaryKey: []string{"id"},
 		Fields: []f.MigrateField{
 			mi.Field("id").Int(11).AutoIncrement(),
 			mi.Field("message").Varchar(20).DefaultString(""),
@@ -60,7 +60,7 @@ func (MasterMigrate) Migrate20201016140601CreateUser(mi f.Migrate) {
 func (MasterMigrate) Migrate20201102152223CreateUserLocation(mi f.Migrate) {
 	mi.CreateTable(f.CreateTableQB{
 		TableName: "user_location",
-		PrimaryKey: "id",
+		PrimaryKey: []string{"id"},
 		Fields: []f.MigrateField{
 			mi.Field("id").Char(36),
 			mi.Field("point").Type("POINT", 0),
