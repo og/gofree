@@ -43,6 +43,8 @@ type QB struct {
 	Debug bool
 	Check []string
 }
+const NoNeedSoftDelete Column = "NoNeedSoftDelete"
+const DefaultSoftDeletedField Column = "deleted_at"
 type WhereAnd map[Column][]Filter
 type WhereAndList []WhereAnd
 func filterListRemove(list []Filter, handle func(index int, filter Filter) (remove bool)) (newFilter []Filter) {
@@ -230,7 +232,19 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 				qb.Where = whereAndListRemoveByIndex(qb.Where, whereAndIndex)
 			}
 		}
-		shouldWhere := len(qb.Where) != 0  || qb.SoftDelete != ""
+		var softDeletedField string
+		switch props.Statement {
+		case "SELECT", "UPDATE":
+			switch softDeletedField {
+			case "":
+				softDeletedField = DefaultSoftDeletedField.String()
+			case NoNeedSoftDelete.String():
+				softDeletedField = qb.SoftDelete.String()
+			default:
+				softDeletedField = qb.SoftDelete.String()
+			}
+		}
+		shouldWhere := len(qb.Where) != 0  || softDeletedField != ""
 		if props.Statement == "INSERT" {
 			shouldWhere = false
 		}
@@ -238,12 +252,7 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			sqlList.Push("WHERE")
 			var WhereList stringQueue
 			parseWhere(qb.Where, &WhereList, &sqlValues)
-			switch props.Statement {
-			case "SELECT", "UPDATE":
-				if qb.SoftDelete != "" {
-					WhereList.Push(wrapField(qb.SoftDelete.String()) + " IS NULL")
-				}
-			}
+			WhereList.Push(wrapField(softDeletedField) + " IS NULL")
 			sqlList.Push(WhereList.Join(" AND "))
 			notEmptyStringSqlList := stringQueue{}
 			for _, item := range sqlList.Value {
@@ -497,15 +506,11 @@ func logDebug(isDebug bool, data Data) {
 	}
 }
 func (qb QB) BindModel(model Model) QB {
-	valueType := reflect.ValueOf(model).Elem().Type()
 	if qb.Table == "" {
 		if model.TableName() == "" {
 			panic(errors.New("tableName is empty string"))
 		}
 		qb.Table = model.TableName()
-	}
-	if structField, has := valueType.FieldByName("DeletedAt"); has {
-		qb.SoftDelete = Column(structField.Tag.Get("db"))
 	}
 	return qb
 }

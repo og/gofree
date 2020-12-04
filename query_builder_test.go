@@ -21,7 +21,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT `name` FROM `user` WHERE `name` = ?", sqlS)
+		assert.Equal(t, "SELECT `name` FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{"nimo"}, values)
 	}
 	{
@@ -31,7 +31,7 @@ func TestQB_Sql(t *testing.T) {
 			Where: []f.WhereAnd{
 				{"name": {f.Equal("nimo")}},
 			},
-			Check: []string{"SELECT `name` FROM `user` WHERE `name` = ?"},
+			Check: []string{"SELECT `name` FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL"},
 		}
 		_, _ = qb.GetSelect()
 	}
@@ -42,7 +42,7 @@ func TestQB_Sql(t *testing.T) {
 			Where: []f.WhereAnd{
 				{"name": {f.Equal("nimo")}},
 			},
-			Check: []string{"SELECT `name`, `id` FROM `user` WHERE `name` = ?","SELECT `name` FROM `user` WHERE `name` = ?"},
+			Check: []string{"SELECT `name`, `id` FROM `user` WHERE `name` = ?","SELECT `name` FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL"},
 		}
 		_, _ = qb.GetSelect()
 	}
