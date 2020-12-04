@@ -73,9 +73,11 @@ func (MasterMigrate) Migrate20201102152223CreateUserLocation(mi f.Migrate) {
 }
 
 
+func init () {
+	f.ExecMigrate(db, &MasterMigrate{})
+}
 func TestDB(t *testing.T) {
 	as := gtest.NewAS(t)
-	f.ExecMigrate(db, &MasterMigrate{})
 	_, err := db.Core.Exec(`truncate table user`) ; ge.Check(err)
 	ctx := context.Background()
 	ge.Check(db.Create(ctx,&User{
@@ -196,7 +198,7 @@ func TestDB(t *testing.T) {
 	}
 	{
 		newLog := Log4{Message: "abc"}
-		as.PanicError("Log4.ID type must be uint or int or string", func() {
+		as.PanicError("log ID type must be uint or int or string", func() {
 			err := db.Create(ctx, &newLog)
 			if err != nil {panic(err)}
 		})
@@ -208,5 +210,63 @@ func TestDB(t *testing.T) {
 			if err != nil {panic(err)}
 		})
 	}
-
+}
+func TestUpdate(t *testing.T) {
+	as := gtest.NewAS(t)
+	ctx := context.Background()
+	// update
+	_, err := db.Core.Exec(`truncate table user`) ; ge.Check(err)
+	{
+		user := User{
+			Name: "updateName",
+		}
+		userCol :=User{}.Column()
+		ge.Check(db.Create(ctx, &user))
+		err := db.UpdateData(ctx, &user, f.Data{
+			userCol.Name: "updateName2",
+			userCol.IsSuper: true,
+		}) ; ge.Check(err)
+		as.Equal(user.Name, "updateName2")
+		as.Equal(user.IsSuper, true)
+		{
+			newUser := User{}
+			var has bool
+			ge.Check(db.OneID(ctx, &newUser, &has, user.ID))
+			as.Equal(newUser.Name, "updateName2")
+			as.Equal(newUser.IsSuper, true)
+		}
+	}
+}
+func TestDatabase_ScanRow(t *testing.T) {
+	_, err := db.Core.Exec(`truncate table user`) ; ge.Check(err)
+	as := gtest.NewAS(t)
+	ctx := context.Background()
+	_=as
+	user := User{
+		Name: "scanRow",
+	}
+	ge.Check(db.Create(ctx, &user))
+	userCol := User{}.Column()
+	{
+		var has bool
+		var name string
+		ge.Check(db.QueryRowScan(ctx, &has, f.QB{
+			Table: user.TableName(),
+			Select: []f.Column{userCol.Name},
+			Where: f.And(userCol.ID, user.ID),
+		}, &name))
+		as.Equal(name, "scanRow")
+		as.Equal(has, true)
+	}
+	{
+		var has bool
+		var name string
+		ge.Check(db.QueryRowScan(ctx, &has, f.QB{
+			Table: user.TableName(),
+			Select: []f.Column{userCol.Name},
+			Where: f.And(userCol.ID, ""),
+		}, &name))
+		as.Equal(name, "")
+		as.Equal(has, false)
+	}
 }

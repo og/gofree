@@ -123,3 +123,4 @@ func (Log6) TableName() string {
 func (model Log6) BeforeCreate() {
 
 }
+

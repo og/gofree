@@ -37,6 +37,7 @@ type QB struct {
 	Lock SelectLock
 	SoftDelete Column
 	Insert Data
+	insertSort []sortData
 	Update Data
 	Count bool
 	Debug bool
@@ -148,20 +149,28 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			func(_Insert int) {
 				sqlList.Push("INSERT INTO")
 				sqlList.Push(tableName)
-				var keys []Column
-				for _, key := range gmap.UnsafeKeys(qb.Insert).String() {
-					keys = append(keys, Column(key))
-				}
-				if len(keys) == 0 {
-					panic(errors.New("gofree: Insert can not be a empty map"))
-				}
+
 				insertKeyList := stringQueue{}
 				insertValueList := stringQueue{}
-				for _, key := range keys {
-					value := qb.Insert[key]
-					insertKeyList.Push(wrapField(key.String()))
+				if qb.insertSort == nil && qb.Insert == nil {
+					panic(errors.New("gofree: Insert  can not be a empty map"))
+				}
+				for _, item := range qb.insertSort {
+					insertKeyList.Push(wrapField(item.Column.String()))
 					insertValueList.Push("?")
-					sqlValues = append(sqlValues, value)
+					sqlValues = append(sqlValues, item.Value)
+				}
+				if qb.Insert != nil {
+					var keys []Column
+					for _, key := range gmap.UnsafeKeys(qb.Insert).String() {
+						keys = append(keys, Column(key))
+					}
+					for _, key := range keys {
+						value := qb.Insert[key]
+						insertKeyList.Push(wrapField(key.String()))
+						insertValueList.Push("?")
+						sqlValues = append(sqlValues, value)
+					}
 				}
 				sqlList.Push("(" + insertKeyList.Join(", ") + ")")
 				sqlList.Push("VALUES")
@@ -488,14 +497,12 @@ func logDebug(isDebug bool, data Data) {
 	}
 }
 func (qb QB) BindModel(model Model) QB {
-	valuePtr := reflect.ValueOf(model)
-	value := valuePtr.Elem()
-	valueType := value.Type()
+	valueType := reflect.ValueOf(model).Elem().Type()
 	if qb.Table == "" {
-		qb.Table = model.TableName()
-		if qb.Table == "" {
+		if model.TableName() == "" {
 			panic(errors.New("tableName is empty string"))
 		}
+		qb.Table = model.TableName()
 	}
 	if structField, has := valueType.FieldByName("DeletedAt"); has {
 		qb.SoftDelete = Column(structField.Tag.Get("db"))

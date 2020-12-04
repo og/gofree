@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 type Data map[Column]interface{}
+type sortData struct {
+	Column Column
+	Value interface{}
+}
 func UUID() string {
 	return uuid.New().String()
 }

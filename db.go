@@ -111,21 +111,19 @@ func coreCreate(ctx context.Context, storage Storager,modelPtr Model) error {
 	value, _ := getPtrElem(modelPtr)
 	modelPtr.BeforeCreate()
 	typeValue := reflect.TypeOf(modelPtr).Elem()
-	insertData := map[Column]interface{}{}
+	insertSort := []sortData{}
 	var idValue reflect.Value
 	var hasPrimaryKeyAutoIncrement bool
 	for i:=0;i<value.NumField();i++{
 		item := value.Field(i)
 		itemType := typeValue.Field(i)
 		dbName, hasDBName := itemType.Tag.Lookup("db")
-		if !hasDBName {
-			continue
-		}
-		if dbName == "" {
+		if !hasDBName { continue }
+		switch dbName {
+		case "":
 			log.Print(`Maybe you forget set db:"name"` + itemType.Name)
 			continue
-		}
-		if dbName == "id" {
+		case "id":
 			idValue = item
 			autoIncrementValue, has := itemType.Tag.Lookup("dbAutoIncrement")
 			if has {
@@ -138,67 +136,62 @@ func coreCreate(ctx context.Context, storage Storager,modelPtr Model) error {
 					panic(errors.New(`dbAutoIncrement muse be dbAutoIncrement:"true" or dbAutoIncrement:"false" can not be dbAutoIncrement:"`+ autoIncrementValue + `"`))
 				}
 			}
-		}
-		insertData[Column(dbName)] = item.Interface()
-	}
-	nowTime := time.Now()
-	{
-		createdAtValue := value.FieldByName("CreatedAt")
-		if createdAtValue.IsValid() {
-			createdAtType, _ := typeValue.FieldByName("CreatedAt")
-			timeValue := nowTime
-			{
-				createdAtTime := createdAtValue.Interface().(time.Time)
-				if createdAtTime.IsZero() {
-					createdAtValue.Set(reflect.ValueOf(timeValue))
-				} else {
-					timeValue = createdAtTime
-				}
+		case "created_at","updated_at":
+			insertSort = append(insertSort, sortData{Column(dbName), fillTime(time.Now(), item)})
+			continue
+		case "deleted_at":
+			if item.IsZero() {
+				continue
 			}
-			insertData[Column(createdAtType.Tag.Get("db"))] = timeValue
-
 		}
-	}
-	{
-		updatedAtValue := value.FieldByName("UpdatedAt")
-		if updatedAtValue.IsValid() {
-			updatedAtType, _ := typeValue.FieldByName("UpdatedAt")
-			timeValue := nowTime
-			{
-				updatedAtTime := updatedAtValue.Interface().(time.Time)
-				if updatedAtTime.IsZero() {
-					updatedAtValue.Set(reflect.ValueOf(timeValue))
-				} else {
-					timeValue = updatedAtTime
-				}
-			}
-			insertData[Column(updatedAtType.Tag.Get("db"))] = timeValue
-		}
+		insertSort = append(insertSort, sortData{Column(dbName), item.Interface()})
 	}
 	query, values := QB{
-		Insert: insertData,
-	}.BindModel(modelPtr).GetInsert()
-	var result sql.Result
-	result, err := storage.ExecContext(ctx, query, values...) ; if err != nil {return err}
-	if hasPrimaryKeyAutoIncrement {
-		lastInsertID, err := result.LastInsertId() ; ge.Check(err)
-		if lastInsertID == 0 {
-			panic(errors.New(modelPtr.TableName() + " does not support AutoIncrement or LastInsertId()"))
-		}
-		switch idValue.Type().Kind() {
-		case reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
-			idValue.SetUint(uint64(lastInsertID))
-		case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64:
-			idValue.SetInt(lastInsertID)
-		case reflect.String:
-			idValue.SetString(gconv.Int64String(lastInsertID))
-		default:
-			panic(errors.New(typeValue.Name() + ".ID type must be uint or int or string"))
-		}
-	}
+		Table: modelPtr.TableName(),
+		insertSort: insertSort,
+	}.GetInsert()
+	result, execErr := storage.ExecContext(ctx, query, values...) ; if execErr != nil {return execErr}
+	bindInsertID(bindInsertIDData{
+		Result: result,
+		IDValue: idValue,
+		HasPrimaryKeyAutoIncrement: hasPrimaryKeyAutoIncrement,
+		Model: modelPtr,
+	})
 	return nil
 }
-
+type bindInsertIDData struct {
+	Result sql.Result
+	IDValue reflect.Value
+	HasPrimaryKeyAutoIncrement bool
+	Model Model
+}
+func bindInsertID(data bindInsertIDData) {
+	if data.HasPrimaryKeyAutoIncrement {
+		lastInsertID, err := data.Result.LastInsertId() ; ge.Check(err)
+		if lastInsertID == 0 {
+			panic(errors.New(data.Model.TableName() + " does not support AutoIncrement or LastInsertId()"))
+		}
+		switch data.IDValue.Type().Kind() {
+		case reflect.Uint,reflect.Uint8,reflect.Uint16,reflect.Uint32,reflect.Uint64:
+			data.IDValue.SetUint(uint64(lastInsertID))
+		case reflect.Int,reflect.Int8,reflect.Int16,reflect.Int32,reflect.Int64:
+			data.IDValue.SetInt(lastInsertID)
+		case reflect.String:
+			data.IDValue.SetString(gconv.Int64String(lastInsertID))
+		default:
+			panic(errors.New(data.Model.TableName() + " ID type must be uint or int or string"))
+		}
+	}
+}
+func fillTime (timeValue time.Time, item reflect.Value) (sqlValue interface{}) {
+	if item.IsZero() {
+		sqlValue = timeValue
+		item.Set(reflect.ValueOf(timeValue))
+	} else {
+		sqlValue = item.Interface()
+	}
+	return
+}
 func (db *Database) DeleteQB(ctx context.Context, modelPtr Model, qb QB) error {
 	return coreDeleteQB(ctx, db.Core, modelPtr, qb)
 }
@@ -248,21 +241,14 @@ func  coreDelete(ctx context.Context, storage Storager, modelPtr Model) (error) 
 	return nil
 }
 
-func (db *Database) Update(ctx context.Context,  modelPtr Model) error {
-	return coreUpdate(ctx, db.Core, modelPtr, false, nil)
+func (db *Database) UpdateData(ctx context.Context,  modelPtr Model, updateData Data) error {
+	return coreUpdateData(ctx, db.Core, modelPtr, updateData)
 }
-func (tx *Tx) Update(ctx context.Context,  modelPtr Model) error {
-	return coreUpdate(ctx, tx.Core, modelPtr, false, nil)
+func (tx *Tx) UpdateData(ctx context.Context,  modelPtr Model, updateData Data) error {
+	return coreUpdateData(ctx, tx.Core, modelPtr, updateData)
 }
-func (db *Database) UpdateData(ctx context.Context,  modelPtr Model, data Data) error {
-	return coreUpdate(ctx, db.Core, modelPtr, true, data)
-}
-func (tx *Tx) UpdateData(ctx context.Context,  modelPtr Model, data Data) error {
-	return coreUpdate(ctx, tx.Core, modelPtr, true, data)
-}
-func coreUpdate (ctx context.Context, storage Storager, modelPtr Model, useUpdateData bool, updateData Data) error {
-	rValue, isPtr := getPtrElem(modelPtr)
-	if !isPtr { panic("db.Update() or db.TxUpdate()  arg `modelPtr` must be a ptr, eg: db.Update(&user) db.TxUpdate(tx, &user) ") }
+func coreUpdateData (ctx context.Context, storage Storager, modelPtr Model,  updateData Data) error {
+	rValue, _ := getPtrElem(modelPtr)
 	typeValue := reflect.TypeOf(modelPtr).Elem()
 	fieldLen := rValue.NumField()
 	var id interface{}
@@ -271,44 +257,41 @@ func coreUpdate (ctx context.Context, storage Storager, modelPtr Model, useUpdat
 		item := rValue.Field(i)
 		itemType := typeValue.Field(i)
 		dbName, hasDBName := itemType.Tag.Lookup("db")
-		if !hasDBName {
-			continue
-		}
-		if dbName == "" {
+		if !hasDBName { continue }
+		value := item.Interface()
+		switch dbName {
+		case "":
 			log.Print(`Maybe you forget set db:"name"` + itemType.Name)
 			continue
-		}
-		value := item.Interface()
-		if dbName == "id" {
-			if item.IsZero() {
-				panic(errors.New("update model.ID is zero"))
+		case "id":
+			if dbName == "id" {
+				if item.IsZero() {
+					panic(errors.New("update model.ID is zero"))
+				}
+				findID = true
+				id = value
+				continue
 			}
-			findID = true
-			id = value
-			continue
 		}
-		if useUpdateData {
-			rValue.Set(reflect.ValueOf(updateData[Column(dbName)]))
-		} else {
-			updateData[Column(dbName)] = value
+		value, hasValue := updateData[Column(dbName)]
+		if hasValue {
+			item.Set(reflect.ValueOf(value))
 		}
 	}
-	if !findID {
-		panic(errors.New("update not found id"))
-	}
+	if !findID { panic(errors.New("update not found id")) }
 	updatedAtValue := rValue.FieldByName("UpdatedAt")
 	if updatedAtValue.IsValid() {
+		nowTime := time.Now()
 		updatedAtType, _ := typeValue.FieldByName("UpdatedAt")
-		updateData[Column(updatedAtType.Tag.Get("db"))] = time.Now()
-		updatedAtValue.Set(reflect.ValueOf(time.Now()))
+		updateData[Column(updatedAtType.Tag.Get("db"))] = nowTime
+		updatedAtValue.Set(reflect.ValueOf(nowTime))
 	}
-
 	query, values := QB{
+		Table: modelPtr.TableName(),
 		Where: And("id", id),
 		Update: updateData,
-	}.BindModel(modelPtr).GetUpdate()
-	result, err := storage.ExecContext(ctx, query, values...) ; if err != nil {return err}
-	_, err = result.LastInsertId(); if err != nil {return err}
+	}.GetUpdate()
+	_, err := storage.ExecContext(ctx, query, values...) ; if err != nil {return err}
 	return nil
 }
 func (db *Database) Transaction(ctx context.Context, transaction func(ftx *Tx) error) (error) {
@@ -334,4 +317,24 @@ func (db *Database) TransactionOpts(ctx context.Context, opts *sql.TxOptions, tr
 }
 func (db *Database) Close() error {
 	return db.Core.Close()
+}
+func (db *Database) QueryRowScan(ctx context.Context, has *bool, qb QB,  dest ...interface{}) error {
+	return coreQueryRowScan(ctx, db.Core, has, qb, dest...)
+}
+func (tx *Tx) QueryRowScan(ctx context.Context, qb QB, has *bool,  dest ...interface{}) error {
+	return coreQueryRowScan(ctx, tx.Core, has, qb, dest...)
+}
+func coreQueryRowScan(ctx context.Context, storage Storager, has *bool, qb QB, dest ...interface{}) error {
+	query, values := qb.GetSelect()
+	row := storage.QueryRowxContext(ctx, query, values...)
+	err := row.Scan(dest...)
+	*has = true
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			*has = false
+			return nil
+		}
+		return err
+	}
+	return nil
 }
