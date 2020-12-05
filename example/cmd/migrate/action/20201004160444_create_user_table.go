@@ -1,4 +1,4 @@
-package projectNameMigrate
+package migrateAction
 
 import (
 	f "github.com/og/gofree"
@@ -6,7 +6,7 @@ import (
 func (MasterMigrate) Migrate20201004160444CreateUserTable(mi f.Migrate) {
 	mi.CreateTable(f.CreateTableQB{
 		TableName: "user",
-		PrimaryKey: "id",
+		PrimaryKey: []string{"id"},
 		Fields: append([]f.MigrateField{
 			mi.Field("id").Char(36).DefaultString(""),
 			mi.Field("name").Varchar(20).DefaultString(""),

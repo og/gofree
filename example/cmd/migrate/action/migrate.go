@@ -1,4 +1,4 @@
-package projectNameMigrate
+package migrateAction
 
 type MasterMigrate struct {
 

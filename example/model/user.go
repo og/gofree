@@ -1,7 +1,7 @@
-package exampleGofree
+package m
 
 import (
-	"github.com/go-sql-driver/mysql"
+	"database/sql"
 	f "github.com/og/gofree"
 	"time"
 )
@@ -11,12 +11,12 @@ func (id IDUser) String() string {return string(id)}
 type User struct {
 	ID IDUser `db:"id"`
 	Name string `db:"name"`
+	Mobile string `db:"mobile"`
 	Age int `db:"age"`
 	Disabled bool `db:"disabled"`
-	Password string `db:"string"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
-	DeletedAt mysql.NullTime `db:"deleted_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
 }
 func (user *User) BeforeCreate() {
 	if user.ID == "" { user.ID = IDUser(f.UUID()) }
@@ -25,18 +25,18 @@ func (user User) TableName() string { return "user" }
 func (User) Column() (col struct{
 	ID f.Column
 	Name f.Column
+	Mobile f.Column
 	Age f.Column
 	Disabled f.Column
-	Password f.Column
 	CreatedAt f.Column
 	UpdatedAt f.Column
 	DeletedAt f.Column
 }) {
 	col.ID = "id"
 	col.Name = "name"
+	col.Mobile = "mobile"
 	col.Age = "age"
 	col.Disabled = "disabled"
-	col.Password = "password"
 	col.CreatedAt = "created_at"
 	col.UpdatedAt = "updated_at"
 	col.DeletedAt = "deleted_at"
@@ -51,7 +51,7 @@ type UserIntegral struct {
 	Integral string `db:"Integral"`
 	CreatedAt time.Time `db:"created_at"`
 	UpdatedAt time.Time `db:"updated_at"`
-	DeletedAt mysql.NullTime `db:"deleted_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
 }
 func (user UserIntegral) TableName () string {return "user_integral"}
 func (user *UserIntegral) BeforeCreate() {

@@ -27,6 +27,8 @@ github.com/og/x v0.0.0-20201004094939-77fdead0ad9b h1:QWNrvsjpgOy0uxxmp6rOXpPmDC
 github.com/og/x v0.0.0-20201004094939-77fdead0ad9b/go.mod h1:zax5SueqthLdt48iYUYJa6erJpK9xNmigS/jwgu9zTc=
 github.com/og/x v0.0.0-20201004122453-a6d5522f6a1a h1:s1BECK/cgIs9V96AhRzja8mOi7iREKfiWQykQkmRaJM=
 github.com/og/x v0.0.0-20201004122453-a6d5522f6a1a/go.mod h1:zax5SueqthLdt48iYUYJa6erJpK9xNmigS/jwgu9zTc=
+github.com/og/x v0.0.0-20201013035552-574351525556 h1:oQ25aueUObnDtBlLHvxGp9R6JQ/iTkyTRd4zED8d8AQ=
+github.com/og/x v0.0.0-20201013035552-574351525556/go.mod h1:zax5SueqthLdt48iYUYJa6erJpK9xNmigS/jwgu9zTc=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sergi/go-diff v1.1.0 h1:we8PVUC3FE2uYfodKH/nBHMSetSfHDR6scGdBi+erh0=
