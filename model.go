@@ -13,7 +13,10 @@ func (c Column) String() string {
 }
 type AutoIncrement uint
 
-
+type RelationModel interface {
+	TableName () string
+	RelationJoin () []Join
+}
 
 
 

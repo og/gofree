@@ -29,6 +29,7 @@ const FORUPDATE SelectLock = "FOR UPDATE"
 type QB struct {
 	Table string
 	Select []Column
+	Join []Join
 	Where []WhereAnd
 	Offset int
 	Limit int
@@ -86,7 +87,23 @@ func And(column Column, value interface{}) WhereAndList {
 	return WhereAndList{}.And(column, value)
 }
 func wrapField(field string) string {
-	return "`" + string(field) + "`"
+	return "`" + strings.ReplaceAll(field, ".", "`.`") + "`"
+}
+type JoinType string
+func (t JoinType) String() string {
+	return string(t)
+}
+const InnerJoin JoinType = "INNER JOIN"
+const LeftJoin JoinType = "LEFT JOIN"
+const RightJoin JoinType = "RIGHT JOIN"
+const FullOuterJoin JoinType = "FULL OUTER JOIN"
+const CrossJoin JoinType = "CROSS JOIN"
+
+type JoinOn uint8
+type Join struct {
+	Type JoinType
+	TableName string
+	On []Column
 }
 
 // filter list interface maybe Filter
@@ -214,6 +231,22 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 		})
 	}
 	{
+		// JOIN
+		if len(qb.Join) != 0 {
+			for _, join := range qb.Join {
+				var onConditionList []string
+				for index, _ := range join.On {
+					if index % 2 == 1 {
+						condition :=  wrapField(join.On[index - 1].String()) + " = " + wrapField(join.On[index].String())
+						onConditionList = append(onConditionList, condition)
+					}
+
+				}
+				sqlList.Push(join.Type.String(),  "`" + join.TableName + "`", "ON", strings.Join(onConditionList, " AND "))
+			}
+		}
+	}
+	{
 		// Where field operator value
 		// remove ignore
 		for _, whereAnd := range qb.Where {
@@ -232,14 +265,14 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 				qb.Where = whereAndListRemoveByIndex(qb.Where, whereAndIndex)
 			}
 		}
-		var softDeletedField string
+		var softDeletedField = qb.SoftDelete.String()
 		switch props.Statement {
 		case "SELECT", "UPDATE":
 			switch softDeletedField {
 			case "":
 				softDeletedField = DefaultSoftDeletedField.String()
 			case NoNeedSoftDelete.String():
-				softDeletedField = qb.SoftDelete.String()
+				softDeletedField = ""
 			default:
 				softDeletedField = qb.SoftDelete.String()
 			}
@@ -252,7 +285,16 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			sqlList.Push("WHERE")
 			var WhereList stringQueue
 			parseWhere(qb.Where, &WhereList, &sqlValues)
-			WhereList.Push(wrapField(softDeletedField) + " IS NULL")
+			if softDeletedField != "" {
+				if len(qb.Join) == 0 {
+					WhereList.Push(wrapField(softDeletedField) + " IS NULL")
+				} else {
+					WhereList.Push(wrapField(qb.Table + "." + softDeletedField) + " IS NULL")
+					for _, join := range qb.Join {
+						WhereList.Push(wrapField(join.TableName + "." + softDeletedField) + " IS NULL")
+					}
+				}
+			}
 			sqlList.Push(WhereList.Join(" AND "))
 			notEmptyStringSqlList := stringQueue{}
 			for _, item := range sqlList.Value {
@@ -506,12 +548,7 @@ func logDebug(isDebug bool, data Data) {
 	}
 }
 func (qb QB) BindModel(model Model) QB {
-	if qb.Table == "" {
-		if model.TableName() == "" {
-			panic(errors.New("tableName is empty string"))
-		}
-		qb.Table = model.TableName()
-	}
+	qb.Table = model.TableName()
 	return qb
 }
 

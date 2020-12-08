@@ -18,9 +18,9 @@ type Database struct {
 	onlyReadDataSourceName DataSourceName
 }
 type Storager interface {
-	QueryRowxContext(ctx context.Context, query string, args ...interface{}) *sqlx.Row
-	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
-	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	QueryRowxContext(cTransaction context.Context, query string, args ...interface{}) *sqlx.Row
+	SelectContext(cTransaction context.Context, dest interface{}, query string, args ...interface{}) error
+	ExecContext(cTransaction context.Context, query string, args ...interface{}) (sql.Result, error)
 }
 func (database Database) DataSourceName () DataSourceName {
 	return database.onlyReadDataSourceName
@@ -35,62 +35,80 @@ func NewDatabase(dataSourceName DataSourceName) (database Database, err error) {
 	return database, nil
 }
 
-func (db *Database) OneQB(ctx context.Context, modelPtr Model, has *bool, qb QB) error {
-	return coreOneQB(ctx, db.Core, modelPtr, has, qb)
+func (db *Database) One(cTransaction context.Context, modelPtr Model, has *bool, qb QB) error {
+	return coreOne(cTransaction, db.Core, modelPtr, has, qb)
 }
-func (tx *Tx) OneQB(ctx context.Context, modelPtr Model, has *bool, qb QB) error {
-	return coreOneQB(ctx, tx.Core, modelPtr, has, qb)
+func (Transaction *Transaction) One(cTransaction context.Context, modelPtr Model, has *bool, qb QB) error {
+	return coreOne(cTransaction, Transaction.Core, modelPtr, has, qb)
 }
-func coreOneQB(ctx context.Context, storage Storager, modelPtr Model, has *bool, qb QB) error {
+func coreOne(cTransaction context.Context, storage Storager, modelPtr Model, has *bool, qb QB) error {
 	qb.Limit = 1
 	scanModelMakeSQLSelect(reflect.ValueOf(modelPtr).Elem().Type(), &qb)
 	query, values := qb.BindModel(modelPtr).GetSelect()
-	row := storage.QueryRowxContext(ctx, query, values...)
+	row := storage.QueryRowxContext(cTransaction, query, values...)
 	err := row.StructScan(modelPtr)
 	if err == sql.ErrNoRows { *has = false ; return nil}
 	if err != nil { return err }
 	*has = true
 	return nil
 }
-func (db *Database) OneID(ctx context.Context, modelPtr Model, has *bool, id interface{}) error {
-	return coreOneQB(ctx, db.Core, modelPtr, has, QB{
+func (db *Database) Relation(cTransaction context.Context, relationPtr RelationModel, has *bool, qb QB) error {
+	return coreRelation(cTransaction, db.Core, relationPtr, has, qb)
+}
+func (Transaction *Transaction) Relation(cTransaction context.Context, relationPtr RelationModel, has *bool, qb QB) error {
+	return coreRelation(cTransaction, Transaction.Core, relationPtr, has, qb)
+}
+func coreRelation(cTransaction context.Context, storage Storager, relationPtr RelationModel, has *bool, qb QB) error {
+	qb.Limit = 1
+	scanModelMakeSQLSelect(reflect.ValueOf(relationPtr).Elem().Type(), &qb)
+	qb.Table = relationPtr.TableName()
+	query, values := qb.GetSelect()
+	row := storage.QueryRowxContext(cTransaction, query, values...)
+	err := row.StructScan(relationPtr)
+	if err == sql.ErrNoRows { *has = false ; return nil}
+	if err != nil { return err }
+	*has = true
+	return nil
+}
+func (db *Database) OneID(cTransaction context.Context, modelPtr Model, has *bool, id interface{}) error {
+	return coreOne(cTransaction, db.Core, modelPtr, has, QB{
 		Where:And("id", id),
 	})
 }
-func (tx *Tx) OneID(ctx context.Context, modelPtr Model, has *bool, id interface{}) error {
-	return coreOneQB(ctx, tx.Core, modelPtr, has, QB{
+func (Transaction *Transaction) OneID(cTransaction context.Context, modelPtr Model, has *bool, id interface{}) error {
+	return coreOne(cTransaction, Transaction.Core, modelPtr, has, QB{
 		Where:And("id", id),
 	})
 }
-func (tx *Tx) OneIDLock(ctx context.Context, modelPtr Model, has *bool, id interface{}, lock SelectLock) error {
-	return coreOneQB(ctx, tx.Core, modelPtr, has, QB{
+func (Transaction *Transaction) OneIDLock(cTransaction context.Context, modelPtr Model, has *bool, id interface{}, lock SelectLock) error {
+	return coreOne(cTransaction, Transaction.Core, modelPtr, has, QB{
 		Where:And("id", id),
 		Lock: lock,
 	})
 }
 
-func (db *Database) Count(ctx context.Context, modelPtr Model, qb QB) (count int, err error) {
-	return coreCountQB(ctx, db.Core, modelPtr, qb)
+func (db *Database) Count(cTransaction context.Context, modelPtr Model,count *int, qb QB) (err error) {
+	return coreCount(cTransaction, db.Core, modelPtr, count,  qb)
 }
-func (tx *Tx) Count(ctx context.Context, modelPtr Model, qb QB) (count int, err error) {
-	return coreCountQB(ctx, tx.Core, modelPtr, qb)
+func (Transaction *Transaction) Count(cTransaction context.Context, modelPtr Model,count *int, qb QB) ( err error) {
+	return coreCount(cTransaction, Transaction.Core, modelPtr, count, qb)
 }
-func coreCountQB(ctx context.Context, storage Storager, modelPtr Model, qb QB) (count int, err error)  {
+func coreCount(cTransaction context.Context, storage Storager, modelPtr Model, count *int, qb QB)( err error)  {
 	qb.Count = true
 	query, values := qb.BindModel(modelPtr).GetSelect()
-	row := storage.QueryRowxContext(ctx,query, values...)
-	err = row.Scan(&count)
+	row := storage.QueryRowxContext(cTransaction,query, values...)
+	err = row.Scan(count)
 	if err != nil { return }
 	return
 }
 
-func (db *Database) ListQB(ctx context.Context, modelListPtr interface{}, qb QB) error {
-	return coreListQB(ctx, db.Core, modelListPtr, qb)
+func (db *Database) List(cTransaction context.Context, modelListPtr interface{}, qb QB) error {
+	return coreList(cTransaction, db.Core, modelListPtr, qb)
 }
-func (tx *Tx) ListQB(ctx context.Context, modelListPtr interface{}, qb QB) error {
-	return coreListQB(ctx, tx.Core, modelListPtr, qb)
+func (Transaction *Transaction) List(cTransaction context.Context, modelListPtr interface{}, qb QB) error {
+	return coreList(cTransaction, Transaction.Core, modelListPtr, qb)
 }
-func coreListQB(ctx context.Context, storage Storager, modelListPtr interface{}, qb QB) error {
+func coreList(cTransaction context.Context, storage Storager, modelListPtr interface{}, qb QB) error {
 	elementType := reflect.TypeOf(modelListPtr).Elem()
 	reflectItemValue := reflect.MakeSlice(elementType, 1,1).Index(0)
 	scanModelMakeSQLSelect(reflectItemValue.Type(), &qb)
@@ -99,15 +117,15 @@ func coreListQB(ctx context.Context, storage Storager, modelListPtr interface{},
 		tableName := reflectItemValue.MethodByName("TableName").Call([]reflect.Value{})[0].String()
 		qb.Table = tableName
 	}
-	return storage.SelectContext(ctx,modelListPtr, query, values...)
+	return storage.SelectContext(cTransaction,modelListPtr, query, values...)
 }
-func (db *Database) Create(ctx context.Context, modelPtr Model) error {
-	return coreCreate(ctx, db.Core , modelPtr)
+func (db *Database) Create(cTransaction context.Context, modelPtr Model) error {
+	return coreCreate(cTransaction, db.Core , modelPtr)
 }
-func (tx *Tx) Create(ctx context.Context, modelPtr Model) error {
-	return coreCreate(ctx, tx.Core , modelPtr)
+func (Transaction *Transaction) Create(cTransaction context.Context, modelPtr Model) error {
+	return coreCreate(cTransaction, Transaction.Core , modelPtr)
 }
-func coreCreate(ctx context.Context, storage Storager,modelPtr Model) error {
+func coreCreate(cTransaction context.Context, storage Storager,modelPtr Model) error {
 	value, _ := getPtrElem(modelPtr)
 	modelPtr.BeforeCreate()
 	typeValue := reflect.TypeOf(modelPtr).Elem()
@@ -150,7 +168,7 @@ func coreCreate(ctx context.Context, storage Storager,modelPtr Model) error {
 		Table: modelPtr.TableName(),
 		insertSort: insertSort,
 	}.GetInsert()
-	result, execErr := storage.ExecContext(ctx, query, values...) ; if execErr != nil {return execErr}
+	result, execErr := storage.ExecContext(cTransaction, query, values...) ; if execErr != nil {return execErr}
 	bindInsertID(bindInsertIDData{
 		Result: result,
 		IDValue: idValue,
@@ -192,41 +210,41 @@ func fillTime (timeValue time.Time, item reflect.Value) (sqlValue interface{}) {
 	}
 	return
 }
-func (db *Database) DeleteQB(ctx context.Context, modelPtr Model, qb QB) error {
-	return coreDeleteQB(ctx, db.Core, modelPtr, qb)
+func (db *Database) DeleteQB(cTransaction context.Context, modelPtr Model, qb QB) error {
+	return coreDeleteQB(cTransaction, db.Core, modelPtr, qb)
 }
-func (tx *Tx) DeleteQB(ctx context.Context, modelPtr Model, qb QB) error {
-	return coreDeleteQB(ctx, tx.Core, modelPtr, qb)
+func (Transaction *Transaction) DeleteQB(cTransaction context.Context, modelPtr Model, qb QB) error {
+	return coreDeleteQB(cTransaction, Transaction.Core, modelPtr, qb)
 }
-func coreDeleteQB(ctx context.Context, storage Storager, modelPtr Model, qb QB) error {
+func coreDeleteQB(cTransaction context.Context, storage Storager, modelPtr Model, qb QB) error {
 	_, isPtr := getPtrElem(modelPtr)
 	if !isPtr {
-		panic("db.DeleteQB() or db.TxDeleteQB()  arg `modelPtr` must be a ptr, eg: db.DeleteQB(&user, qb) db.TxDeleteQB(tx, &user, qb) ")
+		panic("db.DeleteQB() or db.TransactionDeleteQB()  arg `modelPtr` must be a ptr, eg: db.DeleteQB(&user, qb) db.TransactionDeleteQB(Transaction, &user, qb) ")
 	}
 	if len(qb.Update) == 0 {
 		qb.Update = map[Column]interface{}{}
 	}
 	qb.Update["deleted_at"] = time.Now()
 	query, values := qb.BindModel(modelPtr).GetUpdate()
-	_, err := storage.ExecContext(ctx, query, values...)
+	_, err := storage.ExecContext(cTransaction, query, values...)
 	if err != nil {return err}
 	return nil
 }
 
-func (db *Database) Delete(ctx context.Context, modelPtr Model) error {
-	return coreDelete(ctx, db.Core, modelPtr)
+func (db *Database) Delete(cTransaction context.Context, modelPtr Model) error {
+	return coreDelete(cTransaction, db.Core, modelPtr)
 }
-func (tx *Tx) Delete(ctx context.Context, modelPtr Model) error {
-	return coreDelete(ctx, tx.Core, modelPtr)
+func (Transaction *Transaction) Delete(cTransaction context.Context, modelPtr Model) error {
+	return coreDelete(cTransaction, Transaction.Core, modelPtr)
 }
-func  coreDelete(ctx context.Context, storage Storager, modelPtr Model) (error) {
+func coreDelete(cTransaction context.Context, storage Storager, modelPtr Model) (error) {
 	rValue, isPtr := getPtrElem(modelPtr)
 	if !isPtr {
-		panic("db.Delete() or db.TxDelete()  arg `modelPtr` must be a ptr, eg: db.Delete(&user) db.TxDelete(tx, &user) ")
+		panic("db.Delete() or db.TransactionDelete()  arg `modelPtr` must be a ptr, eg: db.Delete(&user) db.TransactionDelete(Transaction, &user) ")
 	}
 	idValue := rValue.FieldByName("ID")
 	if idValue.IsZero() {
-		panic(errors.New("db.Update(&model) or db.TxUpdate(&model) model.id is zero"))
+		panic(errors.New("db.Update(&model) or db.TransactionUpdate(&model) model.id is zero"))
 	}
 	id := idValue.Interface()
 	qb := QB{
@@ -237,17 +255,17 @@ func  coreDelete(ctx context.Context, storage Storager, modelPtr Model) (error) 
 	}
 	qb.Update["deleted_at"] = time.Now()
 	query, values := qb.BindModel(modelPtr).GetUpdate()
-	_, err := storage.ExecContext(ctx,query, values...) ; if err != nil {return err}
+	_, err := storage.ExecContext(cTransaction,query, values...) ; if err != nil {return err}
 	return nil
 }
 
-func (db *Database) UpdateData(ctx context.Context,  modelPtr Model, updateData Data) error {
-	return coreUpdateData(ctx, db.Core, modelPtr, updateData)
+func (db *Database) UpdateData(cTransaction context.Context,  modelPtr Model, updateData Data) error {
+	return coreUpdateData(cTransaction, db.Core, modelPtr, updateData)
 }
-func (tx *Tx) UpdateData(ctx context.Context,  modelPtr Model, updateData Data) error {
-	return coreUpdateData(ctx, tx.Core, modelPtr, updateData)
+func (Transaction *Transaction) UpdateData(cTransaction context.Context,  modelPtr Model, updateData Data) error {
+	return coreUpdateData(cTransaction, Transaction.Core, modelPtr, updateData)
 }
-func coreUpdateData (ctx context.Context, storage Storager, modelPtr Model,  updateData Data) error {
+func coreUpdateData (cTransaction context.Context, storage Storager, modelPtr Model,  updateData Data) error {
 	rValue, _ := getPtrElem(modelPtr)
 	typeValue := reflect.TypeOf(modelPtr).Elem()
 	fieldLen := rValue.NumField()
@@ -291,42 +309,42 @@ func coreUpdateData (ctx context.Context, storage Storager, modelPtr Model,  upd
 		Where: And("id", id),
 		Update: updateData,
 	}.GetUpdate()
-	_, err := storage.ExecContext(ctx, query, values...) ; if err != nil {return err}
+	_, err := storage.ExecContext(cTransaction, query, values...) ; if err != nil {return err}
 	return nil
 }
-func (db *Database) Transaction(ctx context.Context, transaction func(ftx *Tx) error) (error) {
-	return db.TransactionOpts(ctx, nil, transaction)
+func (db *Database) Transaction(cTransaction context.Context, transaction func(fTransaction *Transaction) error) (error) {
+	return db.TransactionOpts(cTransaction, nil, transaction)
 }
-func (db *Database) TransactionOpts(ctx context.Context, opts *sql.TxOptions, transaction func(*Tx) error) (txError error) {
-	sqlxtx, err := db.Core.BeginTxx(ctx, opts) ; if err != nil {return err}
-	tx := newTx(sqlxtx)
+func (db *Database) TransactionOpts(cTransaction context.Context, opts *sql.TxOptions, transaction func(*Transaction) error) (TransactionError error) {
+	sqlxTx, err := db.Core.BeginTxx(cTransaction, opts) ; if err != nil {return err}
+	Transaction := newTransaction(sqlxTx)
 	defer func() {
 		r := recover()
 		if r != nil {
-			rollbackErr := tx.Rollback() ; _= rollbackErr // 此时可以忽略 rollback 的错误
+			rollbackErr := Transaction.Rollback() ; _= rollbackErr // 此时可以忽略 rollback 的错误
 			panic(r)
 		}
 	}()
-	err = transaction(tx)
+	err = transaction(Transaction)
 	if err != nil {
-		ge.Check(tx.Rollback())
+		ge.Check(Transaction.Rollback())
 		return err
 	} else {
-		return tx.commit()
+		return Transaction.commit()
 	}
 }
 func (db *Database) Close() error {
 	return db.Core.Close()
 }
-func (db *Database) QueryRowScan(ctx context.Context, has *bool, qb QB,  dest ...interface{}) error {
-	return coreQueryRowScan(ctx, db.Core, has, qb, dest...)
+func (db *Database) QueryRowScan(cTransaction context.Context, has *bool, qb QB,  dest ...interface{}) error {
+	return coreQueryRowScan(cTransaction, db.Core, has, qb, dest...)
 }
-func (tx *Tx) QueryRowScan(ctx context.Context, qb QB, has *bool,  dest ...interface{}) error {
-	return coreQueryRowScan(ctx, tx.Core, has, qb, dest...)
+func (Transaction *Transaction) QueryRowScan(cTransaction context.Context, qb QB, has *bool,  dest ...interface{}) error {
+	return coreQueryRowScan(cTransaction, Transaction.Core, has, qb, dest...)
 }
-func coreQueryRowScan(ctx context.Context, storage Storager, has *bool, qb QB, dest ...interface{}) error {
+func coreQueryRowScan(cTransaction context.Context, storage Storager, has *bool, qb QB, dest ...interface{}) error {
 	query, values := qb.GetSelect()
-	row := storage.QueryRowxContext(ctx, query, values...)
+	row := storage.QueryRowxContext(cTransaction, query, values...)
 	err := row.Scan(dest...)
 	*has = true
 	if err != nil {

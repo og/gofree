@@ -42,7 +42,7 @@ func TestQB_Sql(t *testing.T) {
 			Where: []f.WhereAnd{
 				{"name": {f.Equal("nimo")}},
 			},
-			Check: []string{"SELECT `name`, `id` FROM `user` WHERE `name` = ?","SELECT `name` FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL"},
+			Check: []string{"SELECT `name`, `id` FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL"},
 		}
 		_, _ = qb.GetSelect()
 	}
@@ -55,7 +55,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT `name`, `age` FROM `user` WHERE `name` = ?", sqlS)
+		assert.Equal(t, "SELECT `name`, `age` FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{"nimo"}, values)
 	}
 	{
@@ -64,7 +64,7 @@ func TestQB_Sql(t *testing.T) {
 			Where: f.And("name","nimo"),
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{"nimo"}, values)
 	}
 	{
@@ -97,7 +97,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{"nico"}, values)
 	}
 	{
@@ -106,7 +106,7 @@ func TestQB_Sql(t *testing.T) {
 			Where: f.And("name", f.Equal("nico")),
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{"nico"}, values)
 	}
 
@@ -121,7 +121,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `age` = ? AND `name` = ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` = ? AND `name` = ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{18, "nimo"}, values)
 	}
 	{
@@ -130,7 +130,7 @@ func TestQB_Sql(t *testing.T) {
 			Where: f.And(f.Column("name"), "nimo").And(f.Column("age"),18),
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `age` = ? AND `name` = ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` = ? AND `name` = ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{18, "nimo"}, values)
 	}
 	{
@@ -144,7 +144,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `age` < ? AND `age` > ? AND `name` = ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` < ? AND `age` > ? AND `name` = ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{18, 19, "nimo"}, values)
 	}
 	{
@@ -155,7 +155,7 @@ func TestQB_Sql(t *testing.T) {
 					And("age", f.Gt(19)),
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `age` < ? AND `age` > ? AND `name` = ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` < ? AND `age` > ? AND `name` = ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{18, 19, "nimo"}, values)
 	}
 	{
@@ -170,7 +170,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE ( `city` = ? ) OR ( `age` < ? AND `age` > ? AND `name` = ? )", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE ( `city` = ? ) OR ( `age` < ? AND `age` > ? AND `name` = ? ) AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface{}{"shanghai", 18, 19, "nimo"}, values)
 	}
 	{
@@ -187,7 +187,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE ( `city` = ? ) OR ( `age` < ? AND `age` > ? AND `name` = ? )", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE ( `city` = ? ) OR ( `age` < ? AND `age` > ? AND `name` = ? ) AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface{}{"shanghai", 18, 19, "nimo"}, values)
 	}
 	// {
@@ -218,7 +218,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `age` <= ? AND `age` >= ? AND `name` = ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` <= ? AND `age` >= ? AND `name` = ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{18, 19, "nimo"}, values)
 	}
 	{
@@ -233,7 +233,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `id` LIKE ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `id` LIKE ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface{}{"%1%"}, values)
 	}
 	{
@@ -248,7 +248,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `id` LIKE ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `id` LIKE ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface{}{"1%"}, values)
 	}
 	{
@@ -263,7 +263,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `id` LIKE ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `id` LIKE ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface{}{"%1"}, values)
 	}
 	{
@@ -278,7 +278,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `id` LIKE ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `id` LIKE ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface{}{"1%"}, values)
 	}
 	{
@@ -294,7 +294,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `id` IN (?, ?, ?)", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `id` IN (?, ?, ?) AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{4,5,6}, values)
 	}
 	{
@@ -311,7 +311,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `age` = ? AND `id` IN (?, ?, ?)", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `age` = ? AND `id` IN (?, ?, ?) AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{18,4,5,6}, values)
 	}
 	{
@@ -326,7 +326,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `name` LIKE %-?-%", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `name` LIKE %-?-% AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{1}, values)
 	}
 	{
@@ -341,7 +341,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `name` IS NULL", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `name` IS NULL AND `deleted_at` IS NULL", sqlS)
 		var interfaceList []interface {}
 		assert.Equal(t, interfaceList, values)
 	}
@@ -357,7 +357,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `name` IS NOT NULL", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `name` IS NOT NULL AND `deleted_at` IS NULL", sqlS)
 		var interfaceList []interface {}
 		assert.Equal(t, interfaceList, values)
 	}
@@ -373,7 +373,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` WHERE `time` >= ? AND `time` <= ?", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `time` >= ? AND `time` <= ? AND `deleted_at` IS NULL", sqlS)
 		assert.Equal(t, []interface {}{"2018-11-11 00:00:00", "2018-11-11 23:59:59"}, values)
 	}
 	{
@@ -382,7 +382,7 @@ func TestQB_Sql(t *testing.T) {
 			Group: []f.Column{"name"},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` GROUP BY `name`", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL GROUP BY `name`", sqlS)
 		_ = values
 		// assert.Equal(t, []interface {}{"2019"}, values)
 	}
@@ -393,7 +393,7 @@ func TestQB_Sql(t *testing.T) {
 			Group: []f.Column{"name","age"},
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` GROUP BY `name`, `age`", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL GROUP BY `name`, `age`", sqlS)
 		assert.Equal(t, []interface {}(nil), values)
 	}
 	{
@@ -402,7 +402,7 @@ func TestQB_Sql(t *testing.T) {
 			Order: []f.Order{ {"name", f.DESC} },
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` ORDER BY `name` DESC", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL ORDER BY `name` DESC", sqlS)
 		assert.Equal(t, []interface {}(nil), values)
 	}
 	{
@@ -411,7 +411,7 @@ func TestQB_Sql(t *testing.T) {
 			Order: []f.Order{ {"name", f.DESC},{"age", f.DESC} },
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` ORDER BY `name` DESC, `age` DESC", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL ORDER BY `name` DESC, `age` DESC", sqlS)
 		assert.Equal(t, []interface {}(nil), values)
 	}
 	{
@@ -420,7 +420,7 @@ func TestQB_Sql(t *testing.T) {
 			Order: []f.Order{ {"name", f.DESC},{"age", f.ASC} },
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` ORDER BY `name` DESC, `age` ASC", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL ORDER BY `name` DESC, `age` ASC", sqlS)
 		assert.Equal(t, []interface {}(nil), values)
 	}
 	{
@@ -429,7 +429,7 @@ func TestQB_Sql(t *testing.T) {
 			Order: []f.Order{ {"name", f.ASC},{"age", f.DESC} },
 		}
 		sqlS, values := qb.GetSelect()
-		assert.Equal(t, "SELECT * FROM `user` ORDER BY `name` ASC, `age` DESC", sqlS)
+		assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL ORDER BY `name` ASC, `age` DESC", sqlS)
 		assert.Equal(t, []interface {}(nil), values)
 	}
 	{
@@ -443,7 +443,7 @@ func TestQB_Sql(t *testing.T) {
 			},
 		}
 		query, values := qb.GetUpdate()
-		assert.Equal(t, "UPDATE `user` SET `name` = ? WHERE `id` = ?", query)
+		assert.Equal(t, "UPDATE `user` SET `name` = ? WHERE `id` = ? AND `deleted_at` IS NULL", query)
 		assert.Equal(t, []interface {}{"sam", "13"}, values)
 	}
 	{
@@ -475,7 +475,7 @@ func TestQB_Sql(t *testing.T) {
 			Count: true,
 		}
 		insert, values := qb.GetSelect()
-		assert.Equal(t, "SELECT count(*) FROM `user`", insert)
+		assert.Equal(t, "SELECT count(*) FROM `user` WHERE `deleted_at` IS NULL", insert)
 		assert.Equal(t, []interface {}(nil), values)
 	}
 	{
@@ -611,7 +611,7 @@ func TestQB_Sql(t *testing.T) {
 				Table: "user",
 				Where: f.And("title", f.EqualIgnoreEmpty("")),
 			}.GetSelect()
-			assert.Equal(t, "SELECT * FROM `user`", sql)
+			assert.Equal(t, "SELECT * FROM `user` WHERE `deleted_at` IS NULL", sql)
 			assert.Equal(t, []interface {}(nil), values)
 		}
 		{
@@ -762,7 +762,7 @@ func TestQB_Sql(t *testing.T) {
 				"saleCount", f.Custom("= `inventory`"),
 			),
 		}.GetSelect()
-		assert.Equal(t, "SELECT * FROM `goods` WHERE `saleCount` = `inventory`", sql)
+		assert.Equal(t, "SELECT * FROM `goods` WHERE `saleCount` = `inventory` AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}(nil), values)
 	}
 	{
@@ -772,7 +772,7 @@ func TestQB_Sql(t *testing.T) {
 				"saleCount", f.IgnoreFilter(),
 			),
 		}.GetSelect()
-		assert.Equal(t, "SELECT * FROM `goods`", sql)
+		assert.Equal(t, "SELECT * FROM `goods` WHERE `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}(nil), values)
 	}
 	{
@@ -782,7 +782,7 @@ func TestQB_Sql(t *testing.T) {
 				f.And("age", f.Equal(1)).
 				And("saleCount", f.IgnoreFilter()),
 		}.GetSelect()
-		assert.Equal(t, "SELECT * FROM `goods` WHERE `age` = ?", sql)
+		assert.Equal(t, "SELECT * FROM `goods` WHERE `age` = ? AND `deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{1}, values)
 	}
 	as.PanicError("f.Filter is empty struct", func() {
@@ -799,6 +799,7 @@ func TestQB_Sql(t *testing.T) {
 		sql, values := f.QB{
 			Table: "user",
 			Where: f.And("user", f.IgnoreFilter()),
+			SoftDelete: f.NoNeedSoftDelete,
 		}.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user`", sql)
 		assert.Equal(t, []interface{}(nil), values)
@@ -807,6 +808,7 @@ func TestQB_Sql(t *testing.T) {
 		sql, values := f.QB{
 			Table: "user",
 			Where:f.And("user", f.IgnoreFilter()),
+			SoftDelete: f.NoNeedSoftDelete,
 		}.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user`", sql)
 		assert.Equal(t, []interface{}(nil), values)
@@ -817,6 +819,7 @@ func TestQB_Sql(t *testing.T) {
 			Where:
 			  f.And("user", f.IgnoreFilter()).
 				And("name", "nimo"),
+			SoftDelete: f.NoNeedSoftDelete,
 		}.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ?", sql)
 		assert.Equal(t, []interface{}{"nimo"}, values)
@@ -832,6 +835,7 @@ func TestQB_Sql(t *testing.T) {
 					"name": []f.Filter{f.IgnoreFilter()},
 				},
 			},
+			SoftDelete: f.NoNeedSoftDelete,
 		}.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ?", sql)
 		assert.Equal(t, []interface{}{"nimo"}, values)
@@ -843,6 +847,7 @@ func TestQB_Sql(t *testing.T) {
 			f.And("user", f.IgnoreFilter()).
 				And("name", "nimo"),
 			Lock: f.FORSHARE,
+			SoftDelete: f.NoNeedSoftDelete,
 		}.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ? FOR SHARE", sql)
 		assert.Equal(t, []interface{}{"nimo"}, values)
@@ -853,9 +858,44 @@ func TestQB_Sql(t *testing.T) {
 			Where:
 			f.And("user", f.IgnoreFilter()).
 				And("name", "nimo"),
+			SoftDelete: f.NoNeedSoftDelete,
 			Lock: f.FORUPDATE,
 		}.GetSelect()
 		assert.Equal(t, "SELECT * FROM `user` WHERE `name` = ? FOR UPDATE", sql)
+		assert.Equal(t, []interface{}{"nimo"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Table: "user",
+			Join: []f.Join{
+				{
+				Type: 		f.InnerJoin,
+				TableName:  "user_integral",
+				On: []f.Column{"user.id", "user_integral.user_id"},
+				},
+			},
+			Where:
+			f.And("user", f.IgnoreFilter()).
+				And("name", "nimo"),
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` INNER JOIN `user_integral` ON `user`.`id` = `user_integral`.`user_id` WHERE `name` = ? AND `user`.`deleted_at` IS NULL AND `user_integral`.`deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"nimo"}, values)
+	}
+	{
+		sql, values := f.QB{
+			Table: "user",
+			Join: []f.Join{
+				{
+					Type: 		f.InnerJoin,
+					TableName:  "user_integral",
+					On: []f.Column{"user.id", "user_integral.user_id", "user.status", "user_integral.status"},
+				},
+			},
+			Where:
+			f.And("user", f.IgnoreFilter()).
+				And("name", "nimo"),
+		}.GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` INNER JOIN `user_integral` ON `user`.`id` = `user_integral`.`user_id` AND `user`.`status` = `user_integral`.`status` WHERE `name` = ? AND `user`.`deleted_at` IS NULL AND `user_integral`.`deleted_at` IS NULL", sql)
 		assert.Equal(t, []interface{}{"nimo"}, values)
 	}
 }

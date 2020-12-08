@@ -39,7 +39,7 @@ gofree 给出的解决方案是以结构体 QueryBuilder 作为查询条件消�
  ```go
 var foundUser bool
 user := User{}
-db.OneQB(&user, &foundUser, f.QB{
+db.One(&user, &foundUser, f.QB{
     Where:
     f.And("name", query.Name).
         And("age", query.Age).
@@ -67,7 +67,7 @@ const SQLSelectUserByNameAgeGender = "SELECT `id`, `name`, `is_super`, `created_
 使用 gofree 时通过 `f.QB{Check: []string{}}` 或 `db.OneID().Check(sqls ...[]string)` 配置SQL审查
 
 ```go
-db.OneQB(&user, &foundUser, f.QB{
+db.One(&user, &foundUser, f.QB{
     Where:
     f.And("name", query.Name).
         And("age", query.Age).

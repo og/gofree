@@ -6,9 +6,7 @@ import (
 	"time"
 )
 
-func NewIDUser(id string) IDUser {
-	return IDUser(id)
-}
+
 type IDUser string
 type User struct {
 	ID IDUser `db:"id"`
@@ -29,23 +27,6 @@ func (model *User) BeforeCreate() {
 		model.ID = IDUser(f.UUID())
 	}
 }
-type IDUserLocation string
-type UserLocation struct {
-	ID IDUserLocation `db:"id"`
-	Point f.Point `db:"point"`
-	CreatedAt time.Time `db:"created_at"`
-	UpdatedAt time.Time `db:"updated_at"`
-	DeletedAt sql.NullTime `db:"deleted_at"`
-}
-func (UserLocation) TableName() string {
-	return "user_location"
-}
-func (model *UserLocation) BeforeCreate() {
-	if model.ID == "" {
-		model.ID = IDUserLocation(f.UUID())
-	}
-}
-
 func (User) Column() (col struct {
 	ID f.Column
 	Name f.Column
@@ -61,6 +42,64 @@ func (User) Column() (col struct {
 	col.UpdatedAt = "updated_at"
 	col.DeletedAt = "deleted_at"
 	return
+}
+
+type UserAddress struct {
+	UserID IDUser `db:"user_id"`
+	Address string `db:"address"`
+	CreatedAt time.Time `db:"created_at"`
+	UpdatedAt time.Time `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
+}
+func (UserAddress) TableName() string {
+	return "user_address"
+}
+func (model *UserAddress) BeforeCreate() {}
+func (UserAddress) Column() (col struct {
+	UserID f.Column
+	Address f.Column
+	CreatedAt f.Column
+	UpdatedAt f.Column
+	DeletedAt f.Column
+}) {
+	col.UserID = "user_id"
+	col.Address = "address"
+	col.CreatedAt = "created_at"
+	col.UpdatedAt = "updated_at"
+	col.DeletedAt = "deleted_at"
+	return
+}
+type UserWithAddress struct {
+	UserID IDUser `db:"user.id"`
+	Name string `db:"user.name"`
+	Age int `db:"user.age"`
+	IsSuper bool `db:"user.is_super"`
+	Address string `db:"user_address.address"`
+}
+
+func (UserWithAddress) TableName() string {return "user"}
+func (UserWithAddress) Column() (col struct{
+	UserID f.Column
+	Name f.Column
+	Age f.Column
+	IsSuper f.Column
+	Address f.Column
+}) {
+	col.UserID = "user.id"
+	col.Name = "user.name"
+	col.IsSuper = "user.is_super"
+	col.Age = "user.age"
+	col.Address = "user_address.address"
+	return
+}
+func (u UserWithAddress) SQLJoin() []f.Join {
+	return []f.Join{
+		{
+			Type: f.LeftJoin,
+			TableName: UserAddress{}.TableName(),
+			On: []f.Column{"user.id", "user_address.user_id"},
+		},
+	}
 }
 
 type Log struct {
@@ -123,4 +162,3 @@ func (Log6) TableName() string {
 func (model Log6) BeforeCreate() {
 
 }
-

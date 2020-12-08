@@ -6,14 +6,14 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func newTx(tx *sqlx.Tx) *Tx {
-	return &Tx{Core: tx}
+func newTransaction(tx *sqlx.Tx) *Transaction {
+	return &Transaction{Core: tx}
 }
-type Tx struct {
+type Transaction struct {
 	Core *sqlx.Tx
 }
 
-func (tx *Tx) Rollback() error {
+func (tx *Transaction) Rollback() error {
 	err := tx.Core.Rollback()
 	if errors.Is(err, sql.ErrTxDone) {
 		// 忽略 tx done
@@ -22,7 +22,7 @@ func (tx *Tx) Rollback() error {
 	}
 	return nil
 }
-func (tx *Tx) commit() error {
+func (tx *Transaction) commit() error {
 	err := tx.Core.Commit()
 	if errors.Is(err, sql.ErrTxDone) {
 		// 忽略 tx done

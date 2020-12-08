@@ -87,7 +87,7 @@ func TestDB(t *testing.T) {
 	}))
 	var user User
 	var hasUser bool
-	ge.Check(db.OneQB(ctx, &user, &hasUser, f.QB{
+	ge.Check(db.One(ctx, &user, &hasUser, f.QB{
 		Where:      f.And(user.Column().Name, "nimo"),
 		Check: []string{"SELECT `id`, `name`, `age`, `is_super`, `created_at`, `updated_at`, `deleted_at` FROM `user` WHERE `name` = ? AND `deleted_at` IS NULL LIMIT ?"},
 	}))
@@ -113,12 +113,12 @@ func TestDB(t *testing.T) {
 		as.Error(createError, context.DeadlineExceeded)
 	}
 	{
-		err = db.Transaction(ctx, func(tx *f.Tx) error {
+		err = db.Transaction(ctx, func(tx *f.Transaction) error {
 			ge.Check(tx.Create(ctx, &User{
 				Name: "TXFAIL",
 			}))
 			var hasUser bool
-			err = tx.OneQB(ctx, &user, &hasUser, f.QB{
+			err = tx.One(ctx, &user, &hasUser, f.QB{
 				Where:      f.And(user.Column().Name, "TXFAIL"),
 			})
 			as.NoError(err)
@@ -129,12 +129,12 @@ func TestDB(t *testing.T) {
 		as.ErrorString(err, "some error")
 		user := User{}
 		var hasUser bool
-		ge.Check(db.OneQB(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXFAIL")}))
+		ge.Check(db.One(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXFAIL")}))
 		as.Equal(hasUser, false)
 		as.Equal(user.ID, IDUser(""))
 	}
 	{
-		err := db.Transaction(ctx, func(tx *f.Tx) error {
+		err := db.Transaction(ctx, func(tx *f.Transaction) error {
 			return tx.Create(ctx, &User{
 				Name: "TXCOMMIT SUCCESS",
 			})
@@ -142,13 +142,13 @@ func TestDB(t *testing.T) {
 		as.NoError(err)
 		user := User{}
 		var hasUser bool
-		ge.Check(db.OneQB(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT SUCCESS")}))
+		ge.Check(db.One(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT SUCCESS")}))
 		as.Equal(hasUser, true)
 		as.Equal(user.Name, "TXCOMMIT SUCCESS")
 	}
 	{
 		panicValue := as.Panic(func() {
-			err := db.Transaction(ctx, func(tx *f.Tx) error {
+			err := db.Transaction(ctx, func(tx *f.Transaction) error {
 				ge.Check(tx.Create(ctx, &User{
 					Name: "TXCOMMIT PANIC",
 				}))
@@ -160,11 +160,11 @@ func TestDB(t *testing.T) {
 		as.ErrorString(err, "test panic")
 		user := User{}
 		var hasUser bool
-		ge.Check(db.OneQB(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT PANIC")}))
+		ge.Check(db.One(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT PANIC")}))
 		as.Equal(hasUser, false)
 	}
 	{
-		err := db.Transaction(ctx, func(tx *f.Tx) error {
+		err := db.Transaction(ctx, func(tx *f.Transaction) error {
 			ge.Check(tx.Create(ctx, &User{
 				Name: "TXCOMMIT ROLLBACK",
 			}))
@@ -173,7 +173,7 @@ func TestDB(t *testing.T) {
 		as.NoError(err)
 		user := User{}
 		var hasUser bool
-		ge.Check(db.OneQB(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT ROLLBACK")}))
+		ge.Check(db.One(ctx, &user,&hasUser, f.QB{Where: f.And(user.Column().Name, "TXCOMMIT ROLLBACK")}))
 		as.Equal(hasUser, false)
 	}
 	{
@@ -270,3 +270,16 @@ func TestDatabase_ScanRow(t *testing.T) {
 		as.Equal(has, false)
 	}
 }
+func (UserWithAddress) RelationJoin () []f.Join {
+	return []f.Join{
+		{
+			Type: 		f.InnerJoin,
+			TableName:  "user_integral",
+			On: []f.Column{"user.id", "user_integral.user_id"},
+		},
+	}
+}
+// func TestA(t *testing.T) {
+// 	userWithAddress := UserWithAddress{}
+// 	db.Relation(ctx, &userWithAddress, &has, f.QB{})
+// }
