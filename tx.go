@@ -12,6 +12,9 @@ type Tx struct {
 	done bool
 	core *sqlx.Tx
 }
+func (tx *Tx) Core() *sqlx.Tx {
+	return tx.core 
+}
 func (tx *Tx) Commit() {
 	if !tx.done {
 		ge.Check(tx.core.Commit())
