@@ -796,4 +796,14 @@ func TestQB_Sql(t *testing.T) {
 		assert.Equal(t, "SELECT * FROM `goods`", sql)
 		assert.Equal(t, []interface{}(nil), values)
 	})
+	{
+		sql, values := f.QB{
+			UseIndex: "abc",
+			Where: f.And(
+				"status", f.Eql("all"),
+			),
+		}.BindModel(&User{}).GetSelect()
+		assert.Equal(t, "SELECT * FROM `user` USE INDEX(`abc`) WHERE `status` = ? AND `deleted_at` IS NULL", sql)
+		assert.Equal(t, []interface{}{"all"}, values)
+	}
 }

@@ -22,6 +22,7 @@ type Group struct {
 }
 type QB struct {
 	Table string
+	UseIndex string
 	Select []string
 	Where []AND
 	Offset int
@@ -127,6 +128,9 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			}
 			sqlList.Push("FROM")
 			sqlList.Push(tableName)
+			if len(qb.UseIndex) != 0 {
+				sqlList.Push("USE INDEX(`" + qb.UseIndex + "`)")
+			}
 		case "UPDATE":
 			sqlList.Push("UPDATE")
 			sqlList.Push(tableName)
