@@ -180,6 +180,9 @@ func (qb QB) SQL(props SQLProps) (sql string, sqlValues []interface{}){
 			parseWhere(qb.Where, &WhereList, &sqlValues)
 			switch props.Statement {
 			case "SELECT", "UPDATE":
+				if qb.SoftDelete == "WITHOUT" {
+					qb.SoftDelete = ""
+				}
 				if qb.SoftDelete != "" {
 					WhereList.Push(wrapField(qb.SoftDelete) + " IS NULL")
 				}
