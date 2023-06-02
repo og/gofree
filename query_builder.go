@@ -438,7 +438,9 @@ func (qb QB) BindModel(model interface{}) QB {
 			panic(errors.New("tableName is empty string"))
 		}
 	}
-	qb.SoftDelete = "deleted_at"
+	if qb.SoftDelete == "" {
+		qb.SoftDelete = "deleted_at"
+	}
 	return qb
 }
 
